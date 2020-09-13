@@ -759,9 +759,10 @@ public class BuildDocument implements TagValueBehavior {
 			}
 			SpdxFile newFile = new SpdxFile(modelStore, documentNamespace, lastFileId, copyManager, true);
 			newFile.copyFrom(this.lastFile);
+			modelStore.delete(documentNamespace, lastFile.getId());
 			lastFileId = null;
 			if (lastPackage != null) {
-				this.lastPackage.addFile(lastFile);
+				this.lastPackage.addFile(newFile);
 			}
 			elementIdLineNumberMap.put(lastFileId,lastFileLineNumber);
 			lastFileId = null;

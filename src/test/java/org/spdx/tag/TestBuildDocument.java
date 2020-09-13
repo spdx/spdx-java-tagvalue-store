@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 
+import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.model.ExternalRef;
 import org.spdx.library.model.ModelObject;
 import org.spdx.library.model.ReferenceType;
@@ -335,12 +336,19 @@ public class TestBuildDocument extends TestCase {
 		assertTrue(collectionsEquivalent(expected, refs));
 	}
 	 
-	 boolean collectionsEquivalent(Collection<? extends ModelObject> a, Collection<? extends ModelObject> b) {
+	 boolean collectionsEquivalent(Collection<? extends ModelObject> a, Collection<? extends ModelObject> b) throws InvalidSPDXAnalysisException {
 		if (a.size() != b.size()) {
 			return false;
 		}
 		for (ModelObject aItem: a) {
-			if (!b.contains(aItem)) {
+			boolean found = false;
+			for (ModelObject bItem:b) {
+				if (aItem.equivalent(bItem)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
 				return false;
 			}
 		}
