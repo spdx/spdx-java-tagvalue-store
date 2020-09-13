@@ -53,6 +53,8 @@ public class TestBuildDocument extends TestCase {
 	// Document level
 	static final String SPDX_VERSION = "SPDX-2.1";
 	static final String SPDX_VERSION_TAG = "SPDXVersion: " + SPDX_VERSION;
+	static final String DOC_DATA_LICENSE = "CC0-1.0";
+	static final String DOC_DATA_LICENSE_TAG = "DataLicense: " + DOC_DATA_LICENSE;
 	static final String DOC_NAMESPACE = "http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301";
 	static final String DOC_NAMESPACE_TAG = "DocumentNamespace: " + DOC_NAMESPACE;
 	static final String DOC_NAME = "SPDX-Tools-v2.1";
@@ -61,9 +63,10 @@ public class TestBuildDocument extends TestCase {
 	static final String DOC_SPDXID_TAG = "SPDXID: " + DOC_SPDXID;
 	static final String DOC_COMMENT = "Test document\ncomment";
 	static final String DOC_COMMENT_TAG = "DocumentComment: <text>" + DOC_COMMENT + "</text>";
-	static final String DOC_LEVEL_TAGS = SPDX_VERSION_TAG + "\n" +
+	static final String DOC_LEVEL_TAGS = SPDX_VERSION_TAG + "\n" + DOC_DATA_LICENSE_TAG + "\n" +
 			DOC_NAMESPACE_TAG + "\n" + DOC_NAME_TAG + "\n" + DOC_SPDXID_TAG + "\n" +
 			DOC_COMMENT_TAG;
+	
 
 	// External document references
 	static final String EXTERNAL_DOC_REF_NAME = "DocumentRef-spdx-tool-1.2";

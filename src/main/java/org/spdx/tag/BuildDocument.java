@@ -153,7 +153,7 @@ public class BuildDocument implements TagValueBehavior {
 		SpdxPackage pkg;
 
 		public DoapProject(String projectName, SpdxFile file) throws InvalidSPDXAnalysisException {
-			this.pkg = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.SpdxId, documentName), copyManager, true);
+			this.pkg = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.SpdxId, documentNamespace), copyManager, true);
 			pkg.setName(projectName);
 			pkg.setComment("This package was created to replace a deprecated DoapProject");
 			relationship = file.createRelationship(file, RelationshipType.GENERATED_FROM, "This relationship was translated from an deprecated ArtifactOf");
@@ -694,19 +694,7 @@ public class BuildDocument implements TagValueBehavior {
 			inAnnotation = false;
 			inSnippetDefinition = false;
 			inExtractedLicenseDefinition = false;
-			if (this.lastPackage != null) {
-				// A bit klunky, but we need to create a new package and copy all the elements since
-				// we don't know the SPDX ID until after the lastPackage is created
-				if (Objects.isNull(lastPackageId)) {
-					throw new InvalidSpdxTagFileException("Missing SPDX ID for package defined at "+lastPackageLineNumber);
-				}
-				SpdxPackage newPkg = new SpdxPackage(modelStore, documentNamespace, lastPackageId, copyManager, true);
-				newPkg.copyFrom(lastPackage);
-				modelStore.delete(documentNamespace, lastPackage.getId());
-				this.lastPackage = newPkg;
-				elementIdLineNumberMap.put(lastPackageId, lastPackageLineNumber);
-				lastPackageId = null;
-			}
+			addLastPackage();
 			this.lastPackage = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			lastPackageLineNumber = lineNumber;
@@ -724,6 +712,7 @@ public class BuildDocument implements TagValueBehavior {
 			
 			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
+			this.lastFile.setName(value);
 			lastFileLineNumber = lineNumber;
 		} else if (tag.equals(constants.getProperty("PROP_SNIPPET_SPDX_ID"))) {
 			checkAnalysisNull();
@@ -740,6 +729,23 @@ public class BuildDocument implements TagValueBehavior {
 		}
 	}
 
+
+	private void addLastPackage() throws InvalidSPDXAnalysisException {
+		if (this.lastPackage != null) {
+			// A bit klunky, but we need to create a new package and copy all the elements since
+			// we don't know the SPDX ID until after the lastPackage is created
+			if (Objects.isNull(lastPackageId)) {
+				throw new InvalidSpdxTagFileException("Missing SPDX ID for package defined at "+lastPackageLineNumber);
+			}
+			SpdxPackage newPkg = new SpdxPackage(modelStore, documentNamespace, lastPackageId, copyManager, true);
+			newPkg.copyFrom(lastPackage);
+			modelStore.delete(documentNamespace, lastPackage.getId());
+			this.lastPackage = newPkg;
+			elementIdLineNumberMap.put(lastPackageId, lastPackageLineNumber);
+			lastPackageId = null;
+			this.lastPackage = null;
+		}
+	}
 
 	/**
 	 * Adds the last file to either the last package or the document
@@ -968,6 +974,7 @@ public class BuildDocument implements TagValueBehavior {
 			addLastFile();
 			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
+			this.lastFile.setName(value);
 			this.inFileDefinition = true;
 			inSnippetDefinition = false;
 			inAnnotation = false;
@@ -1198,6 +1205,7 @@ public class BuildDocument implements TagValueBehavior {
 			verifyElement(lastExtractedLicense.verify(), "Extracted License", lastExtractedLicenseLineNumber, false);
 		}
 		addLastFile();
+		addLastPackage();
 		if (this.lastPackage != null) {
 			elementIdLineNumberMap.put(this.lastPackage.getId(), this.lastPackageLineNumber);
 		}
@@ -1206,10 +1214,12 @@ public class BuildDocument implements TagValueBehavior {
 		checkSinglePackageDefault();
 		addAnnotations();
 		modelStore.getAllItems(documentNamespace, SpdxConstants.CLASS_SPDX_PACKAGE).forEach(element -> {
+			if (modelStore.getIdType(element.getId()).equals(IdType.Anonymous)) {
+				this.warningMessages.add("Anonomous type was found for package");
+			}
 			if (elementIdLineNumberMap.containsKey(element.getId())) {
-				;
 				try {
-					verifyElement(new SpdxDocument(modelStore, documentNamespace, copyManager, false).verify(), "Package", elementIdLineNumberMap.get(element.getId()));
+					verifyElement(new SpdxPackage(modelStore, documentNamespace, element.getId(), copyManager, false).verify(), "Package", elementIdLineNumberMap.get(element.getId()));
 				} catch (InvalidSPDXAnalysisException e) {
 					this.warningMessages.add("Exception verifying element "+element.getId()+": "+e.getMessage());
 				}
@@ -1296,7 +1306,7 @@ public class BuildDocument implements TagValueBehavior {
 						" at line number "+annotations.get(i).getLineNumber());
 				continue;
 			}
-			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentName, id,  copyManager);
+			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, id,  copyManager);
 			if (!mo.isPresent()) {
 				this.warningMessages.add("Invalid element reference in annotation: " + id + " at line number "+annotations.get(i).getLineNumber());
 				continue;
@@ -1325,7 +1335,7 @@ public class BuildDocument implements TagValueBehavior {
 		for (int i = 0; i < relationships.size(); i++) {
 			RelationshipWithId relationship = relationships.get(i);
 			String id = relationship.getId();
-			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentName, id,  copyManager);
+			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, id,  copyManager);
 			if (!mo.isPresent()) {
 				this.warningMessages.add("Invalid element reference in relationship: " + id + " at line number "+relationship.getLineNumber());
 				continue;
@@ -1344,9 +1354,9 @@ public class BuildDocument implements TagValueBehavior {
 			} else if (SpdxNoAssertionElement.NOASSERTION_ELEMENT_ID.equals(relationship.getRelatedId())) {
 				relatedElement = new SpdxNoAssertionElement();
 			} else {
-				Optional<ModelObject> relatedMo = SpdxModelFactory.getModelObject(modelStore, documentName, id,  copyManager);
+				Optional<ModelObject> relatedMo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, relationship.getRelatedId(),  copyManager);
 				if (!relatedMo.isPresent()) {
-					this.warningMessages.add("Invalid related element reference in relationship: " + id + " at line number "+relationship.getLineNumber());
+					this.warningMessages.add("Invalid related element reference in relationship: " + relationship.getRelatedId() + " at line number "+relationship.getLineNumber());
 					continue;
 				}
 				try {
@@ -1385,6 +1395,11 @@ public class BuildDocument implements TagValueBehavior {
 		List<SpdxFile> allFiles = new ArrayList<>();
 		SpdxModelFactory.getElements(modelStore, documentNamespace, copyManager, SpdxFile.class).forEach(file -> {
 			allFiles.add((SpdxFile)file);
+			if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
+				if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
+					this.warningMessages.add("Anonomous type was found for file");
+				}
+			}
 		});
 		
 		// fill in the filesWithDependencies map
