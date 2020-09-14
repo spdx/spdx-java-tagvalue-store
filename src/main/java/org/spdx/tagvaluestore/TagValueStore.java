@@ -93,6 +93,8 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 		} catch (InvalidFileFormatException e) {
 			// invalid spdx file format
 			throw(new InvalidFileFormatException(e.getMessage()));
+		} catch (InvalidSPDXAnalysisException e) {
+			throw(e);
 		} catch (Exception e){
 			// If any other exception - assume this is an RDF/XML file.
 			throw(new InvalidSPDXAnalysisException("Unexpected Error: "+e.getMessage(), e));

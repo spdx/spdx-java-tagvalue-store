@@ -244,7 +244,7 @@ public class CommonCode {
 			println(out, constants.getProperty("PROP_SNIPPET_BYTE_RANGE") + 
 					formatPointerRange(spdxSnippet.getByteRange()));
 		}
-		if (spdxSnippet.getLineRange() != null) {
+		if (spdxSnippet.getLineRange().isPresent()) {
 			println(out, constants.getProperty("PROP_SNIPPET_LINE_RANGE") +
 					formatPointerRange(spdxSnippet.getLineRange().get()));
 		}
@@ -260,7 +260,7 @@ public class CommonCode {
 		}
 		if (spdxSnippet.getLicenseComments().isPresent() && !spdxSnippet.getLicenseComments().get().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_LIC_COMMENTS") +
-					spdxSnippet.getLicenseComments());
+					spdxSnippet.getLicenseComments().get());
 		}
 		if (spdxSnippet.getCopyrightText() != null && !spdxSnippet.getCopyrightText().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_COPYRIGHT") +
@@ -268,11 +268,11 @@ public class CommonCode {
 		}
 		if (spdxSnippet.getComment().isPresent() && !spdxSnippet.getComment().get().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_COMMENT") +
-					spdxSnippet.getComment());
+					spdxSnippet.getComment().get());
 		}
 		if (spdxSnippet.getName().isPresent() && !spdxSnippet.getName().get().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_NAME") +
-					spdxSnippet.getName());	
+					spdxSnippet.getName().get());	
 		}
 		println(out, "");
 	}
@@ -503,7 +503,7 @@ public class CommonCode {
               StringBuilder excludedFilesBuilder = new StringBuilder("(");
                 
               for (String excludedFile : excludedFiles) {
-                if(excludedFilesBuilder.length() > 0){
+                if(excludedFilesBuilder.length() > 1){
                     excludedFilesBuilder.append(", ");
                 }
                 
@@ -646,14 +646,16 @@ public class CommonCode {
 			try {
 				try {
 					referenceType = ListedReferenceTypes.getListedReferenceTypes().getListedReferenceName(new URI(externalRef.getReferenceType().getIndividualURI()));
-					if (referenceType == null) {
-						referenceType = externalRef.getReferenceType().getIndividualURI();
-						if (referenceType.startsWith(docNamespace + "#")) {
-							referenceType = referenceType.substring(docNamespace.length()+1);
-						}
-					}
 				} catch (URISyntaxException e) {
-					referenceType = "[Invalid URI Syntax]";
+					referenceType = "[Invalid URI]";
+				} catch (InvalidSPDXAnalysisException e) {
+					referenceType = null;
+				}
+				if (referenceType == null) {
+					referenceType = externalRef.getReferenceType().getIndividualURI();
+					if (referenceType.startsWith(docNamespace + "#")) {
+						referenceType = referenceType.substring(docNamespace.length()+1);
+					}
 				}
 			} catch (InvalidSPDXAnalysisException e) {
 				referenceType = "[ERROR: "+e.getMessage()+"]";
@@ -665,8 +667,8 @@ public class CommonCode {
 		}
 		println(out, constants.getProperty("PROP_EXTERNAL_REFERENCE") + 
 				category + " " + referenceType + " " + referenceLocator);
-		if (externalRef.getComment() != null) {
-			println(out, constants.getProperty("PROP_EXTERNAL_REFERENCE_COMMENT") + externalRef.getComment());
+		if (externalRef.getComment().isPresent()) {
+			println(out, constants.getProperty("PROP_EXTERNAL_REFERENCE_COMMENT") + externalRef.getComment().get());
 		}
 	}
 
@@ -681,13 +683,14 @@ public class CommonCode {
 			Properties constants, String checksumProperty) throws InvalidSPDXAnalysisException {
 		out.println(constants.getProperty(checksumProperty)
 				+ checksum.getAlgorithm().toString()
-				+ " " + checksum.getValue());
+				+ ": " + checksum.getValue());
 	}
 
 	/**
 	 * @param file
 	 * @throws InvalidSPDXAnalysisException 
 	 */
+	@SuppressWarnings("deprecation")
 	private static void printFile(SpdxFile file, PrintWriter out,
 			Properties constants) throws InvalidSPDXAnalysisException {
 		printElementProperties(file, out, constants, "PROP_FILE_NAME", 
@@ -754,6 +757,9 @@ public class CommonCode {
 				println(out, constants.getProperty("PROP_FILE_CONTRIBUTOR")+
 						fileContributor);
 			}
+		}
+		for (SpdxFile fileDepdency : file.getFileDependency()) {
+			println(out, constants.getProperty("PROP_FILE_DEPENDENCY") + fileDepdency.getName().get());
 		}
 		printElementAnnotationsRelationships(file, out, constants, "PROP_FILE_NAME", 
 				"PROP_FILE_COMMENT");

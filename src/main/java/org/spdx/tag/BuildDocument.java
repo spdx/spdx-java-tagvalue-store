@@ -176,7 +176,7 @@ public class BuildDocument implements TagValueBehavior {
 
 	private static Pattern EXTERNAL_DOC_REF_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+SHA1:\\s+(\\S+)");
 	private static Pattern RELATIONSHIP_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+(\\S+)");
-	public static Pattern CHECKSUM_PATTERN = Pattern.compile("(\\S+):\\s+(\\S+)");
+	public static Pattern CHECKSUM_PATTERN = Pattern.compile("([A-Za-z0-9\\-_]+)(:|\\s)\\s*(\\S+)");
 	private static Pattern NUMBER_RANGE_PATTERN = Pattern.compile("(\\d+):(\\d+)");
 	private static Pattern EXTERNAL_REF_PATTERN = Pattern.compile("([^ ]+) ([^ ]+) (.+)");
 
@@ -211,6 +211,7 @@ public class BuildDocument implements TagValueBehavior {
 	private ExtractedLicenseInfo lastExtractedLicense = null;
 	private int lastExtractedLicenseLineNumber = 0;
 	private SpdxFile lastFile = null;
+	private List<String> lastFileDependencies = new ArrayList<>();
 	private int lastFileLineNumber = 0;
 	private SpdxSnippet lastSnippet = null;
 	private int lastSnippetLineNumber = 0;
@@ -684,8 +685,8 @@ public class BuildDocument implements TagValueBehavior {
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, true);
 				lastExtractedLicense.setExtractedText("WARNING: TEXT IS REQUIRED");  //change text later
 				lastExtractedLicenseLineNumber = lineNumber;
-				analysis.addExtractedLicenseInfos(lastExtractedLicense);
 			}
+			analysis.addExtractedLicenseInfos(lastExtractedLicense);
 			this.inExtractedLicenseDefinition = true;
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_DECLARED_NAME"))) {
 			checkAnalysisNull();
@@ -697,6 +698,7 @@ public class BuildDocument implements TagValueBehavior {
 			addLastPackage();
 			this.lastPackage = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
+			this.lastPackage.setName(value);
 			lastPackageLineNumber = lineNumber;
 		} else if (tag.equals(constants.getProperty("PROP_FILE_NAME"))) {
 			checkAnalysisNull();
@@ -760,6 +762,10 @@ public class BuildDocument implements TagValueBehavior {
 			SpdxFile newFile = new SpdxFile(modelStore, documentNamespace, lastFileId, copyManager, true);
 			newFile.copyFrom(this.lastFile);
 			modelStore.delete(documentNamespace, lastFile.getId());
+			for (String depdendeFileName:lastFileDependencies) {
+				addFileDependency(newFile, depdendeFileName);
+			}
+			lastFileDependencies.clear();
 			lastFileId = null;
 			if (lastPackage != null) {
 				this.lastPackage.addFile(newFile);
@@ -1040,7 +1046,7 @@ public class BuildDocument implements TagValueBehavior {
 					refTypeUri = new URI(tagType);
 				} else {
 					// User the document namespace
-					refTypeUri = new URI(documentNamespace + matcher.group(2).trim());
+					refTypeUri = new URI(documentNamespace + "#" + matcher.group(2).trim());
 				}
 				referenceType = new ReferenceType(refTypeUri.toString());
 			} catch (URISyntaxException e) {
@@ -1065,7 +1071,7 @@ public class BuildDocument implements TagValueBehavior {
 		}
 		try {
 			ChecksumAlgorithm algorithm = ChecksumAlgorithm.valueOf(matcher.group(1));
-			return document.createChecksum(algorithm, matcher.group(2));
+			return document.createChecksum(algorithm, matcher.group(3));
 		} catch(IllegalArgumentException ex) {
 			throw(new InvalidSpdxTagFileException("Invalid checksum algorithm: "+value+" at line number "+lineNumber));
 		}
@@ -1125,7 +1131,7 @@ public class BuildDocument implements TagValueBehavior {
 		} else if (tag.equals(constants.getProperty("PROP_FILE_CONTRIBUTOR"))) {
 			file.getFileContributors().add(value);
 		} else if (tag.equals(constants.getProperty("PROP_FILE_DEPENDENCY"))) {
-			addFileDependency(file, value);
+			this.lastFileDependencies.add(value);
 		} else if (tag.equals(constants.getProperty("PROP_FILE_ATTRIBUTION_TEXT"))) {
 			file.getAttributionText().add(value);
 		} else if (tag.equals(constants.getProperty("PROP_ANNOTATOR"))) {
@@ -1405,7 +1411,8 @@ public class BuildDocument implements TagValueBehavior {
 		
 		// fill in the filesWithDependencies map
 		for (int i = 0;i < allFiles.size(); i++) {
-			List<SpdxFile> alFilesHavingThisDependency = this.fileDependencyMap.get(allFiles.get(i).getName());
+			String name = allFiles.get(i).getName().get();
+			List<SpdxFile> alFilesHavingThisDependency = this.fileDependencyMap.get(name);
 			if (alFilesHavingThisDependency != null) {
 				for (int j = 0; j < alFilesHavingThisDependency.size(); j++) {
 					SpdxFile fileWithDependency = alFilesHavingThisDependency.get(j);
