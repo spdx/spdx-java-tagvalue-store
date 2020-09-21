@@ -1,4 +1,4 @@
-# Spdx-Java-TagValue-Store
+# spdx-java-tagvalue-store
 
 SPDX store that supports serializing and deserializing SPDX tag/value files.
 
