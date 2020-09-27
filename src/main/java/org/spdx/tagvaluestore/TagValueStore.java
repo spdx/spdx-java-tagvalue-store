@@ -100,5 +100,9 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 			throw(new InvalidSPDXAnalysisException("Unexpected Error: "+e.getMessage(), e));
 		}
 	}
+	
+	public List<String> getWarnings() {
+		return this.warnings;
+	}
 
 }

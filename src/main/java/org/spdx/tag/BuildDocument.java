@@ -909,9 +909,10 @@ public class BuildDocument implements TagValueBehavior {
 			SpdxPackageVerificationCode verificationCode = null;
 			if (value.contains("(")) {
 				String[] verification = value.split("\\(");
-				String[] excludedFiles = verification[1].replace(")", "").split(",");
+				String[] excludedFiles = verification[1].replace(")", "").replace("excludes:", "").split(",");
 				List<String> excludedFilesList = new ArrayList<>();
 				for (int i = 0; i < excludedFiles.length; i++) {
+					
 					excludedFilesList.add(excludedFiles[i].trim());
 				}
 				verificationCode = pkg.createPackageVerificationCode(verification[0].trim(), excludedFilesList);
