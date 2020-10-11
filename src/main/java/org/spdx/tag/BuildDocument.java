@@ -1426,7 +1426,7 @@ public class BuildDocument implements TagValueBehavior {
 				}
 				// remove from the file dependency map so we can keep track of any files which did
 				// not match at the end
-				this.fileDependencyMap.remove(allFiles.get(i).getName());
+				this.fileDependencyMap.remove(name);
 			}
 			List<SpdxSnippet> alSnippetsWithThisFile = this.snippetDependencyMap.get(allFiles.get(i).getId());
 			if (alSnippetsWithThisFile != null) {
