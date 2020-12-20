@@ -1027,7 +1027,7 @@ public class BuildDocument implements TagValueBehavior {
 		}
 		ReferenceCategory referenceCategory = null;
 		try {
-			referenceCategory = ReferenceCategory.valueOf(matcher.group(1).trim());
+			referenceCategory = ReferenceCategory.valueOf(matcher.group(1).trim().replace("-", "_"));
 		} catch(IllegalArgumentException ex) {
 			throw new InvalidSpdxTagFileException("Invalid External Ref category: "+value+" at line number "+lineNumber);
 		}
