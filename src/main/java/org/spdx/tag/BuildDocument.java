@@ -743,7 +743,6 @@ public class BuildDocument implements TagValueBehavior {
 			}
 			SpdxPackage newPkg = new SpdxPackage(modelStore, documentNamespace, lastPackageId, copyManager, true);
 			newPkg.copyFrom(lastPackage);
-			this.lastPackage = newPkg;
 			elementIdLineNumberMap.put(lastPackageId, lastPackageLineNumber);
 			lastPackageId = null;
 			this.lastPackage = null;
@@ -765,6 +764,7 @@ public class BuildDocument implements TagValueBehavior {
 			for (String depdendeFileName:lastFileDependencies) {
 				addFileDependency(newFile, depdendeFileName);
 			}
+			
 			lastFileDependencies.clear();
 			lastFileId = null;
 			if (lastPackage != null) {
@@ -980,7 +980,7 @@ public class BuildDocument implements TagValueBehavior {
 			lastRelationship.setComment(value);
 		} else if (tag.equals(constants.getProperty("PROP_FILE_NAME"))) {
 			addLastFile();
-			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
+			this.lastFile = new SpdxFile(tempModelStore, documentNamespace, tempModelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			this.lastFile.setName(value);
 			this.inFileDefinition = true;
