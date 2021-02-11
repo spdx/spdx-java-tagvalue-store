@@ -65,6 +65,7 @@ import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
+import org.spdx.storage.simple.InMemSpdxStore;
 
 
 /**
@@ -295,6 +296,7 @@ public class BuildDocument implements TagValueBehavior {
 	private IModelStore modelStore;
 	private String lastFileId = null;
 	private String lastPackageId = null;
+	private IModelStore tempModelStore = new InMemSpdxStore();
 
 	public BuildDocument(IModelStore modelStore, Properties constants, List<String> warnings) {
 		this.constants = constants;
@@ -696,7 +698,7 @@ public class BuildDocument implements TagValueBehavior {
 			inSnippetDefinition = false;
 			inExtractedLicenseDefinition = false;
 			addLastPackage();
-			this.lastPackage = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
+			this.lastPackage = new SpdxPackage(tempModelStore, documentNamespace, tempModelStore.getNextId(IdType.Anonymous,  documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			this.lastPackage.setName(value);
 			lastPackageLineNumber = lineNumber;
@@ -712,7 +714,7 @@ public class BuildDocument implements TagValueBehavior {
 			inSnippetDefinition = false;
 			inExtractedLicenseDefinition = false;
 			
-			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
+			this.lastFile = new SpdxFile(tempModelStore, documentNamespace, tempModelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			this.lastFile.setName(value);
 			lastFileLineNumber = lineNumber;
@@ -741,7 +743,6 @@ public class BuildDocument implements TagValueBehavior {
 			}
 			SpdxPackage newPkg = new SpdxPackage(modelStore, documentNamespace, lastPackageId, copyManager, true);
 			newPkg.copyFrom(lastPackage);
-			modelStore.delete(documentNamespace, lastPackage.getId());
 			this.lastPackage = newPkg;
 			elementIdLineNumberMap.put(lastPackageId, lastPackageLineNumber);
 			lastPackageId = null;
@@ -761,7 +762,6 @@ public class BuildDocument implements TagValueBehavior {
 			}
 			SpdxFile newFile = new SpdxFile(modelStore, documentNamespace, lastFileId, copyManager, true);
 			newFile.copyFrom(this.lastFile);
-			modelStore.delete(documentNamespace, lastFile.getId());
 			for (String depdendeFileName:lastFileDependencies) {
 				addFileDependency(newFile, depdendeFileName);
 			}
