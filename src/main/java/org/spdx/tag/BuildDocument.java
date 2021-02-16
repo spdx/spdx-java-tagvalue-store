@@ -737,7 +737,8 @@ public class BuildDocument implements TagValueBehavior {
 			// A bit klunky, but we need to create a new package and copy all the elements since
 			// we don't know the SPDX ID until after the lastPackage is created
 			if (Objects.isNull(lastPackageId)) {
-				throw new InvalidSpdxTagFileException("Missing SPDX ID for package defined at "+lastPackageLineNumber);
+				this.warningMessages.add("Missing SPDX ID for package defined at "+lastPackageLineNumber);
+				this.lastPackageId = modelStore.getNextId(IdType.SpdxId, documentNamespace);
 			}
 			SpdxPackage newPkg = new SpdxPackage(modelStore, documentNamespace, lastPackageId, copyManager, true);
 			newPkg.copyFrom(lastPackage);
@@ -757,7 +758,8 @@ public class BuildDocument implements TagValueBehavior {
 	private void addLastFile() throws InvalidSPDXAnalysisException {
 		if (this.lastFile != null) {
 			if (Objects.isNull(lastFileId)) {
-				throw new InvalidSPDXAnalysisException("Missing SPDX ID for file defined at line "+this.lastFileLineNumber);
+			    this.warningMessages.add("Missing SPDX ID for file defined at line "+this.lastFileLineNumber);
+			    lastFileId = modelStore.getNextId(IdType.SpdxId, documentNamespace);
 			}
 			SpdxFile newFile = new SpdxFile(modelStore, documentNamespace, lastFileId, copyManager, true);
 			newFile.copyFrom(this.lastFile);
