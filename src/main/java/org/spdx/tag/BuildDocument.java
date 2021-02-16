@@ -983,6 +983,7 @@ public class BuildDocument implements TagValueBehavior {
 			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			this.lastFile.setName(value);
+			lastFileLineNumber = lineNumber;
 			this.inFileDefinition = true;
 			inSnippetDefinition = false;
 			inAnnotation = false;
