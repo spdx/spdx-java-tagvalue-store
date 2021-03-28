@@ -637,7 +637,7 @@ public class CommonCode {
 		if (externalRef.getReferenceCategory() == null) {
 			category = "OTHER";
 		} else {
-			category = externalRef.getReferenceCategory().toString();
+			category = externalRef.getReferenceCategory().toString().replace('_', '-');
 		}
 		String referenceType = null;
 		if (externalRef.getReferenceType() == null) {
