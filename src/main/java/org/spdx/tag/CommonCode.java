@@ -153,19 +153,18 @@ public class CommonCode {
 		printElementAnnotationsRelationships(doc, out, constants, "PROP_DOCUMENT_NAME", "PROP_SPDX_COMMENT");
 		println(out, "");
 		// Print the actual files
-		@SuppressWarnings("unchecked")
-		Stream<SpdxPackage> allPackagesStream = (Stream<SpdxPackage>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-				doc.getCopyManager(), SpdxPackage.class);
 		final List<SpdxPackage> allPackages = new ArrayList<>();
-		allPackagesStream.forEach((SpdxPackage pkg) -> allPackages.add(pkg));
-		@SuppressWarnings("unchecked")
-		Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-				doc.getCopyManager(), SpdxFile.class);
+		try(@SuppressWarnings("unchecked")
+            Stream<SpdxPackage> allPackagesStream = (Stream<SpdxPackage>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
+                doc.getCopyManager(), SpdxPackage.class)) {
+		    allPackagesStream.forEach((SpdxPackage pkg) -> allPackages.add(pkg));
+		}
 		final List<SpdxFile> allFiles = new ArrayList<>();
-		allFilesStream.forEach((SpdxFile file) -> allFiles.add(file));
-		@SuppressWarnings("unchecked")
-		Stream<SpdxSnippet> allSnippets = (Stream<SpdxSnippet>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-				doc.getCopyManager(), SpdxSnippet.class);
+		try(@SuppressWarnings("unchecked")
+		    Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
+				doc.getCopyManager(), SpdxFile.class)) {
+		    allFilesStream.forEach((SpdxFile file) -> allFiles.add(file));
+		}
 		// first print out any described files or snippets
 		final List<SpdxElement> alreadyPrinted = new ArrayList<>();
 		Collection<SpdxElement> items = doc.getDocumentDescribes();
@@ -204,16 +203,19 @@ public class CommonCode {
 				}
 			}
 		});
-		allSnippets.sorted().forEach((SpdxSnippet snippet) -> {
-			if (!alreadyPrinted.contains(snippet)) {
-				try {
-					printSnippet(snippet, out, constants);
-				} catch (InvalidSPDXAnalysisException e) {
-					out.println("Error printing package: "+e.getMessage());
-				}
-			}
-		});
-		
+	    try(@SuppressWarnings("unchecked")
+	        Stream<SpdxSnippet> allSnippets = (Stream<SpdxSnippet>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
+	                doc.getCopyManager(), SpdxSnippet.class)) {
+	        allSnippets.sorted().forEach((SpdxSnippet snippet) -> {
+	            if (!alreadyPrinted.contains(snippet)) {
+	                try {
+	                    printSnippet(snippet, out, constants);
+	                } catch (InvalidSPDXAnalysisException e) {
+	                    out.println("Error printing package: "+e.getMessage());
+	                }
+	            }
+	        });
+	    }
 		// Extracted license infos
 		println(out, "");
 		Collection<ExtractedLicenseInfo> extractedLicenseInfos = doc.getExtractedLicenseInfos();

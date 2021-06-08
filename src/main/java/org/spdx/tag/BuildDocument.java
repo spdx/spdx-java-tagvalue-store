@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
@@ -1404,14 +1405,18 @@ public class BuildDocument implements TagValueBehavior {
 		this.checkAnalysisNull();
 		
 		List<SpdxFile> allFiles = new ArrayList<>();
-		SpdxModelFactory.getElements(modelStore, documentNamespace, copyManager, SpdxFile.class).forEach(file -> {
-			allFiles.add((SpdxFile)file);
-			if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
-				if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
-					this.warningMessages.add("Anonomous type was found for file");
-				}
-			}
-		});
+		try(@SuppressWarnings("unchecked")
+        Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getElements(modelStore, documentNamespace, copyManager, SpdxFile.class)) {
+		    fileStream.forEach(file -> {
+	            allFiles.add(file);
+	            if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
+	                if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
+	                    this.warningMessages.add("Anonomous type was found for file");
+	                }
+	            }
+	        });
+		}
+		
 		
 		// fill in the filesWithDependencies map
 		for (int i = 0;i < allFiles.size(); i++) {

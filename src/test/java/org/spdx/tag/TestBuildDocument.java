@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.model.ExternalRef;
@@ -384,9 +385,12 @@ public class TestBuildDocument extends TestCase {
 		parser.setBehavior(new BuildDocument(modelStore, constants, warnings));
 		parser.data();
 		List<SpdxFile> files = new ArrayList<>();
-		SpdxModelFactory.getElements(modelStore, DOC_NAMESPACE, null, SpdxFile.class).forEach(element -> {
-			files.add((SpdxFile)element);
-		});
+		try(@SuppressWarnings("unchecked")
+        Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getElements(modelStore, DOC_NAMESPACE, null, SpdxFile.class)) {
+		    fileStream.forEach(element -> {
+		        files.add((SpdxFile)element);
+		    });
+		}
 		assertEquals(1, files.size());
 		SpdxFile expected = new SpdxFile(modelStore, DOC_NAMESPACE, FILE_LIB_SPDXID, null, false);
 		expected.setName(FILE_LIB_FILENAME);
@@ -412,9 +416,12 @@ public class TestBuildDocument extends TestCase {
 		parser.setBehavior(new BuildDocument(modelStore, constants, warnings));
 		parser.data();
 		List<SpdxSnippet> snippets = new ArrayList<>();
-		SpdxModelFactory.getElements(modelStore, DOC_NAMESPACE, null, SpdxSnippet.class).forEach(element -> {
-			snippets.add((SpdxSnippet)element);
-		});
+		try(@SuppressWarnings("unchecked")
+        Stream<SpdxSnippet> snippetStream = (Stream<SpdxSnippet>)SpdxModelFactory.getElements(modelStore, DOC_NAMESPACE, null, SpdxSnippet.class)) {
+		    snippetStream.forEach(element -> {
+		        snippets.add((SpdxSnippet)element);
+		    });
+		}
 		assertEquals(1, snippets.size());
 		SpdxFile snippetFromFile = new SpdxFile(modelStore, DOC_NAMESPACE, FILE_LIB_SPDXID, null, false);
 		snippetFromFile.setName(FILE_LIB_FILENAME);
