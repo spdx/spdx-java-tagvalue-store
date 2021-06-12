@@ -959,7 +959,8 @@ public class BuildDocument implements TagValueBehavior {
 			if (this.lastExternalRef == null) {
 				throw new InvalidSpdxTagFileException("External reference comment found without an external reference: "+value + " at line number "+lineNumber);
 			}
-			if (this.lastExternalRef.getComment().isPresent() && !this.lastExternalRef.getComment().get().isEmpty()) {
+			Optional<String> lastExternalRefComment = this.lastExternalRef.getComment();
+			if (lastExternalRefComment.isPresent() && !lastExternalRefComment.get().isEmpty()) {
 				throw new InvalidSpdxTagFileException("Second reference comment found for the same external reference: "+value + " at line number "+lineNumber);
 			}
 			this.lastExternalRef.setComment(value);
@@ -1418,7 +1419,13 @@ public class BuildDocument implements TagValueBehavior {
 		
 		// fill in the filesWithDependencies map
 		for (int i = 0;i < allFiles.size(); i++) {
-			String name = allFiles.get(i).getName().get();
+		    Optional<String> fileName = allFiles.get(i).getName();
+		    String name;
+		    if (fileName.isPresent()) {
+		        name = fileName.get();
+		    } else {
+		        name = "";
+		    } 
 			List<SpdxFile> alFilesHavingThisDependency = this.fileDependencyMap.get(name);
 			if (alFilesHavingThisDependency != null) {
 				for (int j = 0; j < alFilesHavingThisDependency.size(); j++) {
@@ -1519,7 +1526,7 @@ public class BuildDocument implements TagValueBehavior {
 		Set<String> missingSnippetFileIds = this.snippetDependencyMap.keySet();
 		if (missingSnippetFileIds != null && missingSnippetFileIds.size() > 0) {
 			this.warningMessages.add("The following file IDs were listed as files for snippets but were not found in the list of files:");
-			Iterator<String> missingIter = missingDependencies.iterator();
+			Iterator<String> missingIter = missingSnippetFileIds.iterator();
 			while(missingIter.hasNext()) {
 				this.warningMessages.add("\t"+missingIter.next());
 			}
