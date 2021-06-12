@@ -55,6 +55,7 @@ import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxFile;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.SpdxPackage;
+import org.spdx.library.model.SpdxPackageVerificationCode;
 import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.enumerations.FileType;
 import org.spdx.library.model.license.AnyLicenseInfo;
@@ -137,18 +138,20 @@ public class CommonCode {
 					+ doc.getCreationInfo().getCreated());
 		}
 		// Creator Comment
-		if (doc.getCreationInfo().getComment().isPresent()
-				&& !doc.getCreationInfo().getComment().get().isEmpty()) {
+		Optional<String> creatorComment = doc.getCreationInfo().getComment();
+		if (creatorComment.isPresent()
+				&& !creatorComment.get().isEmpty()) {
 			println(out, constants.getProperty("PROP_CREATION_COMMENT")
 					+ constants.getProperty("PROP_BEGIN_TEXT") 
-					+ doc.getCreationInfo().getComment().get()
+					+ creatorComment.get()
 					+ constants.getProperty("PROP_END_TEXT"));
 		}
 		// License list version
-		if (doc.getCreationInfo().getLicenseListVersion().isPresent() &&
-				!doc.getCreationInfo().getLicenseListVersion().get().isEmpty()) {
+		Optional<String> licenseListVersion = doc.getCreationInfo().getLicenseListVersion();
+		if (licenseListVersion.isPresent() &&
+				!licenseListVersion.get().isEmpty()) {
 			println(out, constants.getProperty("PROP_LICENSE_LIST_VERSION") + 
-					doc.getCreationInfo().getLicenseListVersion().get());
+			        licenseListVersion.get());
 		}
 		printElementAnnotationsRelationships(doc, out, constants, "PROP_DOCUMENT_NAME", "PROP_SPDX_COMMENT");
 		println(out, "");
@@ -246,9 +249,10 @@ public class CommonCode {
 			println(out, constants.getProperty("PROP_SNIPPET_BYTE_RANGE") + 
 					formatPointerRange(spdxSnippet.getByteRange()));
 		}
-		if (spdxSnippet.getLineRange().isPresent()) {
+		Optional<StartEndPointer> lineRange = spdxSnippet.getLineRange();
+		if (lineRange.isPresent()) {
 			println(out, constants.getProperty("PROP_SNIPPET_LINE_RANGE") +
-					formatPointerRange(spdxSnippet.getLineRange().get()));
+					formatPointerRange(lineRange.get()));
 		}
 		if (spdxSnippet.getLicenseConcluded() != null) {
 			println(out, constants.getProperty("PROP_SNIPPET_CONCLUDED_LICENSE") +
@@ -260,21 +264,24 @@ public class CommonCode {
 						seenLicense);
 			}
 		}
-		if (spdxSnippet.getLicenseComments().isPresent() && !spdxSnippet.getLicenseComments().get().trim().isEmpty()) {
+		Optional<String> licenseComment = spdxSnippet.getLicenseComments();
+		if (licenseComment.isPresent() && !licenseComment.get().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_LIC_COMMENTS") +
-					spdxSnippet.getLicenseComments().get());
+			        licenseComment.get());
 		}
 		if (spdxSnippet.getCopyrightText() != null && !spdxSnippet.getCopyrightText().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_COPYRIGHT") +
 					spdxSnippet.getCopyrightText());
 		}
-		if (spdxSnippet.getComment().isPresent() && !spdxSnippet.getComment().get().trim().isEmpty()) {
+		Optional<String> comment = spdxSnippet.getComment();
+		if (comment.isPresent() && !comment.get().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_COMMENT") +
-					spdxSnippet.getComment().get());
+			        comment.get());
 		}
-		if (spdxSnippet.getName().isPresent() && !spdxSnippet.getName().get().trim().isEmpty()) {
+		Optional<String> name = spdxSnippet.getName();
+		if (name.isPresent() && !name.get().trim().isEmpty()) {
 			println(out, constants.getProperty("PROP_SNIPPET_NAME") +
-					spdxSnippet.getName().get());	
+			        name.get());	
 		}
 		println(out, "");
 	}
@@ -341,16 +348,18 @@ public class CommonCode {
 	private static void printElementProperties(SpdxElement element,
 			PrintWriter out, Properties constants, String nameProperty,
 			String commentProperty) throws InvalidSPDXAnalysisException {
-		if (element.getName().isPresent() && !element.getName().get().isEmpty()) {
-			println(out, constants.getProperty(nameProperty) + element.getName().get());
+	    Optional<String> name = element.getName();
+		if (name.isPresent() && !name.get().isEmpty()) {
+			println(out, constants.getProperty(nameProperty) + name.get());
 		}
 		if (element.getId() != null && !element.getId().isEmpty()) {
 			println(out, constants.getProperty("PROP_ELEMENT_ID") + element.getId());
 		}
-		if (element.getComment().isPresent() && !element.getComment().get().isEmpty()) {
+		Optional<String> comment = element.getComment();
+		if (comment.isPresent() && !comment.get().isEmpty()) {
 			println(out, constants.getProperty(commentProperty)
 					+ constants.getProperty("PROP_BEGIN_TEXT")
-					+ element.getComment().get()
+					+ comment.get()
 					+ constants.getProperty("PROP_END_TEXT"));
 		}
 	}
@@ -382,8 +391,9 @@ public class CommonCode {
 	private static void printRelationship(Relationship relationship,
 			String elementId, PrintWriter out, Properties constants) throws InvalidSPDXAnalysisException {
 		String relatedElementId = "[MISSING]";
-		if (relationship.getRelatedSpdxElement().isPresent()) {
-			relatedElementId = relationship.getRelatedSpdxElement().get().getId();
+		Optional<SpdxElement> relatedElement = relationship.getRelatedSpdxElement();
+		if (relatedElement.isPresent()) {
+			relatedElementId = relatedElement.get().getId();
 		}
 		out.println(constants.getProperty("PROP_RELATIONSHIP")+
 				elementId+" " +
@@ -466,41 +476,47 @@ public class CommonCode {
 		printElementProperties(pkg, out, constants,"PROP_PACKAGE_DECLARED_NAME",
 				"PROP_PACKAGE_COMMENT");
 		// Version
-		if (pkg.getVersionInfo().isPresent()) {
+		Optional<String> version = pkg.getVersionInfo();
+		if (version.isPresent()) {
 			println(out,
 					constants.getProperty("PROP_PACKAGE_VERSION_INFO")
-							+ pkg.getVersionInfo().get());
+							+ version.get());
 		}
 		// File name
-		if (pkg.getPackageFileName().isPresent()) {
+		Optional<String> packageFileName = pkg.getPackageFileName();
+		if (packageFileName.isPresent()) {
 			println(out,
 					constants.getProperty("PROP_PACKAGE_FILE_NAME")
-							+ pkg.getPackageFileName().get());
+							+ packageFileName.get());
 		}
 		// Supplier
-		if (pkg.getSupplier().isPresent()) {
+		Optional<String> supplier = pkg.getSupplier();
+		if (supplier.isPresent()) {
 			println(out,
 					constants.getProperty("PROP_PACKAGE_SUPPLIER")
-							+ pkg.getSupplier().get());
+							+ supplier.get());
 		}
 		// Originator
-		if (pkg.getOriginator().isPresent()) {
+		Optional<String> originator = pkg.getOriginator();
+		if (originator.isPresent()) {
 			println(out,
 					constants.getProperty("PROP_PACKAGE_ORIGINATOR")
-							+ pkg.getOriginator().get());
+							+ originator.get());
 		}
 		// Download location
-		if (pkg.getDownloadLocation().isPresent()) {
+		Optional<String> downloadLocation = pkg.getDownloadLocation();
+		if (downloadLocation.isPresent()) {
 			println(out,
 					constants.getProperty("PROP_PACKAGE_DOWNLOAD_URL")
-							+ pkg.getDownloadLocation().get());
+							+ downloadLocation.get());
 		}
 		// package verification code
-        if (pkg.getPackageVerificationCode().isPresent()
-                && pkg.getPackageVerificationCode().get().getValue() != null
-                && !pkg.getPackageVerificationCode().get().getValue().isEmpty()) {
-          String code = constants.getProperty("PROP_PACKAGE_VERIFICATION_CODE") + pkg.getPackageVerificationCode().get().getValue();
-          Collection<String> excludedFiles = pkg.getPackageVerificationCode().get().getExcludedFileNames();
+		Optional<SpdxPackageVerificationCode> verificationCode = pkg.getPackageVerificationCode();
+        if (verificationCode.isPresent()
+                && verificationCode.get().getValue() != null
+                && !verificationCode.get().getValue().isEmpty()) {
+          String code = constants.getProperty("PROP_PACKAGE_VERIFICATION_CODE") + verificationCode.get().getValue();
+          Collection<String> excludedFiles = verificationCode.get().getExcludedFileNames();
           if (!excludedFiles.isEmpty()) {
               StringBuilder excludedFilesBuilder = new StringBuilder("(");
                 
@@ -525,16 +541,18 @@ public class CommonCode {
 			}
 		}
 		// Home page
-		if (pkg.getHomepage().isPresent()) {
+		Optional<String> homepage = pkg.getHomepage();
+		if (homepage.isPresent()) {
 			println(out, constants.getProperty("PROP_PACKAGE_HOMEPAGE_URL") + 
-					pkg.getHomepage().get());
+			        homepage.get());
 		}
 		// Source info
-		if (pkg.getSourceInfo().isPresent()) {
+		Optional<String> sourceInfo = pkg.getSourceInfo();
+		if (sourceInfo.isPresent()) {
 			println(out, 
 					constants.getProperty("PROP_PACKAGE_SOURCE_INFO")
 							+ constants.getProperty("PROP_BEGIN_TEXT") 
-							+ pkg.getSourceInfo().get()
+							+ sourceInfo.get()
 							+ constants.getProperty("PROP_END_TEXT"));
 		}
 		// concluded license
@@ -558,10 +576,12 @@ public class CommonCode {
 			println(out, constants.getProperty("PROP_PACKAGE_DECLARED_LICENSE")
 					+ pkg.getLicenseDeclared());
 		}
-		if (pkg.getLicenseComments().isPresent()) {
+		// License comments
+		Optional<String> licenseComments = pkg.getLicenseComments();
+		if (licenseComments.isPresent()) {
 			println(out, constants.getProperty("PROP_PACKAGE_LICENSE_COMMENT")
 					+ constants.getProperty("PROP_BEGIN_TEXT") 
-					+ pkg.getLicenseComments().get() + 
+					+ licenseComments.get() + 
 					constants.getProperty("PROP_END_TEXT"));
 		}
 		// Declared copyright
@@ -572,16 +592,18 @@ public class CommonCode {
 					+ pkg.getCopyrightText() + constants.getProperty("PROP_END_TEXT"));
 		}
 		// Short description
-		if (pkg.getSummary().isPresent()) {
+		Optional<String> summary = pkg.getSummary();
+		if (summary.isPresent()) {
 			println(out, constants.getProperty("PROP_PACKAGE_SHORT_DESC")
 					+ constants.getProperty("PROP_BEGIN_TEXT") 
-					+ pkg.getSummary().get() + constants.getProperty("PROP_END_TEXT"));
+					+ summary.get() + constants.getProperty("PROP_END_TEXT"));
 		}
 		// Description
-		if (pkg.getDescription().isPresent()) {
+		Optional<String> description = pkg.getDescription();
+		if (description.isPresent()) {
 			println(out, constants.getProperty("PROP_PACKAGE_DESCRIPTION")
 					+ constants.getProperty("PROP_BEGIN_TEXT") 
-					+ pkg.getDescription().get() + constants.getProperty("PROP_END_TEXT"));
+					+ description.get() + constants.getProperty("PROP_END_TEXT"));
 		}
 		// Attribution text
 		if (!pkg.getAttributionText().isEmpty()) {
@@ -669,8 +691,10 @@ public class CommonCode {
 		}
 		println(out, constants.getProperty("PROP_EXTERNAL_REFERENCE") + 
 				category + " " + referenceType + " " + referenceLocator);
-		if (externalRef.getComment().isPresent()) {
-			println(out, constants.getProperty("PROP_EXTERNAL_REFERENCE_COMMENT") + externalRef.getComment().get());
+		Optional<String> comment = externalRef.getComment();
+		if (comment.isPresent()) {
+			println(out, constants.getProperty("PROP_EXTERNAL_REFERENCE_COMMENT") + 
+			        comment.get());
 		}
 	}
 
@@ -726,10 +750,11 @@ public class CommonCode {
 			}
 		}
 		// license comments
-		if (file.getLicenseComments().isPresent()) {
+		Optional<String> licenseComments = file.getLicenseComments();
+		if (licenseComments.isPresent()) {
 			println(out,
 					constants.getProperty("PROP_FILE_LIC_COMMENTS")
-							+ file.getLicenseComments().get());
+							+ licenseComments.get());
 		}
 		// file copyright
 		if (file.getCopyrightText() != null && !file.getCopyrightText().isEmpty()) {
@@ -738,10 +763,11 @@ public class CommonCode {
 					+ file.getCopyrightText() + constants.getProperty("PROP_END_TEXT"));
 		}
 		// File notice
-		if (file.getNoticeText().isPresent()) {
+		Optional<String> noticeText = file.getNoticeText();
+		if (noticeText.isPresent()) {
 			println(out, constants.getProperty("PROP_FILE_NOTICE_TEXT") + 
 					constants.getProperty("PROP_BEGIN_TEXT") +
-					file.getNoticeText().get() + 
+					noticeText.get() + 
 					constants.getProperty("PROP_END_TEXT"));
 		}
 		// file attribution text
@@ -761,7 +787,14 @@ public class CommonCode {
 			}
 		}
 		for (SpdxFile fileDepdency : file.getFileDependency()) {
-			println(out, constants.getProperty("PROP_FILE_DEPENDENCY") + fileDepdency.getName().get());
+		    Optional<String> depName = fileDepdency.getName();
+		    String depFileName;
+		    if (depName.isPresent()) {
+		        depFileName = depName.get();
+		    } else {
+		        depFileName = "[MISSING]";
+		    }
+			println(out, constants.getProperty("PROP_FILE_DEPENDENCY") + depFileName);
 		}
 		printElementAnnotationsRelationships(file, out, constants, "PROP_FILE_NAME", 
 				"PROP_FILE_COMMENT");
