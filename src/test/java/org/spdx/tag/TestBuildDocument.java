@@ -76,6 +76,12 @@ public class TestBuildDocument extends TestCase {
 	static final String EXTERNAL_DOC_REF_SHA1 = "d6a770ba38583ed4bb4525bd96e50461655d2759";
 	static final String EXTERNAL_DOC_REF_TAG = "ExternalDocumentRef: " + EXTERNAL_DOC_REF_NAME +
 			" " + EXTERNAL_DOC_REF_URI + " SHA1: " + EXTERNAL_DOC_REF_SHA1;
+	static final String EXTERNAL_DOC_REF_NAME2 = "DocumentRef-spdx-tool-2.0";
+	    static final String EXTERNAL_DOC_REF2_URI = "http://spdx.org/spdxdocs/spdx-tools-v2.0-3F2504E0-4F89-41D3-9A0C-0305E82C3301";
+	    static final String EXTERNAL_DOC_REF2_SHA1 = "aaa770ba38583ed4bb4525bd96e50461655d2759";
+	    static final String EXTERNAL_DOC_REF2_TAG = "ExternalDocumentRef: " + EXTERNAL_DOC_REF_NAME2 +
+	            " " + EXTERNAL_DOC_REF2_URI + " SHA1:" + EXTERNAL_DOC_REF2_SHA1;    // NOTE: No space between SHA1 and hash
+	    static final String EXTERNAL_DOC_REF_TAGS = EXTERNAL_DOC_REF_TAG + "\n" + EXTERNAL_DOC_REF2_TAG;
 
 	// Creator
 	static final String CREATOR_TOOL = "Tool: LicenseFind-1.0";
@@ -289,12 +295,12 @@ public class TestBuildDocument extends TestCase {
 		static final String LICENSE_REF2_EXTRACTED_TEXT_TAG = "ExtractedText: <text>" + LICENSE_REF2_EXTRACTED_TEXT + "</text>";
 		static final String LICENSE_REF2_TAGS = LICENSE_REF2_LICENSEID_TAG + "\n" + LICENSE_REF2_EXTRACTED_TEXT_TAG;
 
-	String SIMPLE_TAGDOCUMENT = DOC_LEVEL_TAGS + "\n" + EXTERNAL_DOC_REF_TAG + "\n" +
+	String SIMPLE_TAGDOCUMENT = DOC_LEVEL_TAGS + "\n" + EXTERNAL_DOC_REF_TAGS + "\n" +
 			CREATOR_TAGS + "\n" + DOC_ANNOTATION_TAGS + "\n" + DOC_RELATIONSHIP_TAGS + "\n" +
 			PACKAGE_TAGS + "\n" + FILE_LIB_TAGS + "\n" + SNIPPET_LIB_TAGS + "\n" +
 			LICENSE_REF1_TAGS + "\n" + LICENSE_REF2_TAGS;
 
-	String TAGDOCUMENT_NO_FILES = DOC_LEVEL_TAGS + "\n" + EXTERNAL_DOC_REF_TAG + "\n" +
+	String TAGDOCUMENT_NO_FILES = DOC_LEVEL_TAGS + "\n" + EXTERNAL_DOC_REF_TAGS + "\n" +
 			CREATOR_TAGS + "\n" + DOC_ANNOTATION_TAGS + "\n" + DOC_RELATIONSHIP_TAGS + "\n" +
 			PACKAGE_TAGS_NO_FILES + "\n" + LICENSE_REF1_TAGS + "\n" +
 			LICENSE_REF2_TAGS;
