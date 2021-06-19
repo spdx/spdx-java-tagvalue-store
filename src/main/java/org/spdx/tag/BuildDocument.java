@@ -175,7 +175,7 @@ public class BuildDocument implements TagValueBehavior {
 		}
 	}
 
-	private static Pattern EXTERNAL_DOC_REF_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+SHA1:\\s+(\\S+)");
+	private static Pattern EXTERNAL_DOC_REF_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+SHA1:\\s*(\\S+)");
 	private static Pattern RELATIONSHIP_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+(\\S+)");
 	public static Pattern CHECKSUM_PATTERN = Pattern.compile("([A-Za-z0-9\\-_]+)(:|\\s)\\s*(\\S+)");
 	private static Pattern NUMBER_RANGE_PATTERN = Pattern.compile("(\\d+):(\\d+)");
