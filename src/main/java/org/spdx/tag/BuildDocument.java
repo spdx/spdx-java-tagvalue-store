@@ -175,7 +175,7 @@ public class BuildDocument implements TagValueBehavior {
 		}
 	}
 
-	private static Pattern EXTERNAL_DOC_REF_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+SHA1:\\s*(\\S+)");
+	private static Pattern EXTERNAL_DOC_REF_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+([A-Za-z0-9\\-_]+)(:|\\s)\\s*(\\S+)");
 	private static Pattern RELATIONSHIP_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)\\s+(\\S+)");
 	public static Pattern CHECKSUM_PATTERN = Pattern.compile("([A-Za-z0-9\\-_]+)(:|\\s)\\s*(\\S+)");
 	private static Pattern NUMBER_RANGE_PATTERN = Pattern.compile("(\\d+):(\\d+)");
@@ -877,7 +877,13 @@ public class BuildDocument implements TagValueBehavior {
 		if (!matcher.find()) {
 			throw(new InvalidSpdxTagFileException("Invalid external document reference: "+refStr+" at line number "+lineNumber));
 		}
-		Checksum checksum = document.createChecksum(ChecksumAlgorithm.SHA1, matcher.group(3));
+        ChecksumAlgorithm algorithm = null;
+        try {
+            algorithm = ChecksumAlgorithm.valueOf(matcher.group(3));
+        } catch(IllegalArgumentException ex) {
+            throw(new InvalidSpdxTagFileException("Invalid checksum algorithm: "+refStr+" at line number "+lineNumber));
+        }
+		Checksum checksum = document.createChecksum(algorithm, matcher.group(5));
 		ExternalDocumentRef ref = document.createExternalDocumentRef(matcher.group(1), matcher.group(2), checksum);
 		return ref;
 	}
