@@ -330,7 +330,6 @@ public class BuildDocument implements TagValueBehavior {
 		this.FILE_TAGS.add(constants.getProperty("PROP_ANNOTATION_TYPE").trim()+" ");
 		this.FILE_TAGS.add(constants.getProperty("PROP_FILE_ATTRIBUTION_TEXT").trim()+" ");
 
-		this.SNIPPET_TAGS.add(constants.getProperty("PROP_SNIPPET_SPDX_ID").trim()+" ");
 		this.SNIPPET_TAGS.add(constants.getProperty("PROP_SNIPPET_FROM_FILE_ID").trim()+" ");
 		this.SNIPPET_TAGS.add(constants.getProperty("PROP_SNIPPET_BYTE_RANGE").trim()+" ");
 		this.SNIPPET_TAGS.add(constants.getProperty("PROP_SNIPPET_LINE_RANGE").trim()+" ");
