@@ -1233,7 +1233,7 @@ public class BuildDocument implements TagValueBehavior {
 		addAnnotations();
 		modelStore.getAllItems(documentNamespace, SpdxConstants.CLASS_SPDX_PACKAGE).forEach(element -> {
 			if (modelStore.getIdType(element.getId()).equals(IdType.Anonymous)) {
-				this.warningMessages.add("Anonomous type was found for package");
+				this.warningMessages.add("Anonymous type was found for package");
 			}
 			if (elementIdLineNumberMap.containsKey(element.getId())) {
 				try {
@@ -1417,7 +1417,7 @@ public class BuildDocument implements TagValueBehavior {
 	            allFiles.add(file);
 	            if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
 	                if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {
-	                    this.warningMessages.add("Anonomous type was found for file");
+	                    this.warningMessages.add("Anonymous type was found for file");
 	                }
 	            }
 	        });
