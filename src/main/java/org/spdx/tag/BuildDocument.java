@@ -769,7 +769,7 @@ public class BuildDocument implements TagValueBehavior {
 			}
 			lastFileDependencies.clear();
 			lastFileId = null;
-			if (lastPackage != null) {
+			if (lastPackage != null && !this.lastPackage.getFiles().contains(newFile)) {
 				this.lastPackage.addFile(newFile);
 			}
 			elementIdLineNumberMap.put(lastFileId,lastFileLineNumber);
@@ -1384,10 +1384,22 @@ public class BuildDocument implements TagValueBehavior {
 					continue;
 				}
 			}
-			Relationship newRelationship = element.createRelationship(relatedElement, relationship.getRelationshipType(), 
-					relationship.getComment());
-			verifyElement(newRelationship.verify(), "Relationship", relationships.get(i).getLineNumber());
-			element.addRelationship(newRelationship);
+			boolean dup = false;
+			// check for any duplicate relationships
+			for (Relationship existingRelationship:element.getRelationships()) {
+				if (relationship.getRelationshipType().equals(existingRelationship.getRelationshipType()) &&
+						existingRelationship.getRelatedSpdxElement().isPresent() &&
+						relatedElement.getId().equals(existingRelationship.getRelatedSpdxElement().get().getId())) {
+					dup = true;
+					break;
+				}
+			}
+			if (!dup) {
+				Relationship newRelationship = element.createRelationship(relatedElement, relationship.getRelationshipType(), 
+						relationship.getComment());
+				verifyElement(newRelationship.verify(), "Relationship", relationships.get(i).getLineNumber());
+				element.addRelationship(newRelationship);
+			}
 		}
 	}
 
