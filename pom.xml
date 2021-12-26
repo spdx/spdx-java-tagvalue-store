@@ -103,7 +103,7 @@
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>1.0.8</version>
+    	<version>1.0.9</version>
     </dependency>
   </dependencies>
   <build>
@@ -200,7 +200,7 @@
 		<plugin>
 			<groupId>org.spdx</groupId>
 				<artifactId>spdx-maven-plugin</artifactId>
-				<version>0.5.3</version>
+				<version>0.5.5</version>
 				<executions>
 					<execution>
 						<id>build-spdx</id>
