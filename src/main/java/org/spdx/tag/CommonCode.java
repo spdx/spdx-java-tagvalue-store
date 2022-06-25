@@ -58,6 +58,7 @@ import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxPackageVerificationCode;
 import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.enumerations.FileType;
+import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.ExtractedLicenseInfo;
 import org.spdx.library.model.license.SimpleLicensingInfo;
@@ -509,6 +510,26 @@ public class CommonCode {
 			println(out,
 					constants.getProperty("PROP_PACKAGE_DOWNLOAD_URL")
 							+ downloadLocation.get());
+		}
+		// Primary Package Purpose
+		Optional<Purpose> purpose = pkg.getPrimaryPurpose();
+		if (purpose.isPresent()) {
+			println(out, constants.getProperty("PROP_PRIMARY_PACKAGE_PURPOSE") + purpose.get().toString());
+		}
+		// release date
+		Optional<String> releaseDate = pkg.getReleaseDate();
+		if (releaseDate.isPresent()) {
+			println(out, constants.getProperty("PROP_PACKAGE_RELEASE_DATE") + releaseDate.get());
+		}
+		// Built date
+		Optional<String> builtDate = pkg.getBuiltDate();
+		if (builtDate.isPresent()) {
+			println(out, constants.getProperty("PROP_PACKAGE_BUILT_DATE") + builtDate.get());
+		}
+		// Valid until date
+		Optional<String> validUntilDate = pkg.getValidUntilDate();
+		if (validUntilDate.isPresent()) {
+			println(out, constants.getProperty("PROP_PACKAGE_VALID_UNTIL_DATE") + validUntilDate.get());
 		}
 		// package verification code
 		Optional<SpdxPackageVerificationCode> verificationCode = pkg.getPackageVerificationCode();

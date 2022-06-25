@@ -57,6 +57,7 @@ import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.enumerations.AnnotationType;
 import org.spdx.library.model.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.enumerations.FileType;
+import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.enumerations.ReferenceCategory;
 import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.AnyLicenseInfo;
@@ -71,9 +72,9 @@ import org.spdx.storage.IModelStore.IdType;
 /**
  * Translates an tag-value file to a an SPDX Document.
  *
- * Supports SPDX version 2.0
+ * Supports SPDX version 2.3
  *
- * 2.0 changes made by Gary O'Neall
+ * 2.0, 2.1, 2.2 and 2.3 changes made by Gary O'Neall
  *
  * @author Rana Rahal, Protecode Inc.
  */
@@ -378,6 +379,10 @@ public class BuildDocument implements TagValueBehavior {
 		this.PACKAGE_TAGS.add(constants.getProperty("PROP_EXTERNAL_REFERENCE_COMMENT").trim()+" ");
 		this.PACKAGE_TAGS.add(constants.getProperty("PROP_PACKAGE_FILES_ANALYZED").trim()+" ");
 		this.PACKAGE_TAGS.add(constants.getProperty("PROP_PACKAGE_ATTRIBUTION_TEXT").trim()+" ");
+		this.PACKAGE_TAGS.add(constants.getProperty("PROP_PRIMARY_PACKAGE_PURPOSE").trim() + " ");
+		this.PACKAGE_TAGS.add(constants.getProperty("PROP_PACKAGE_BUILT_DATE").trim() + " ");
+		this.PACKAGE_TAGS.add(constants.getProperty("PROP_PACKAGE_RELEASE_DATE").trim() + " ");
+		this.PACKAGE_TAGS.add(constants.getProperty("PROP_PACKAGE_VALID_UNTIL_DATE").trim() + " ");
 
 		this.EXTRACTED_LICENSE_TAGS.add(constants.getProperty("PROP_LICENSE_TEXT").trim()+" ");
 		this.EXTRACTED_LICENSE_TAGS.add(constants.getProperty("PROP_EXTRACTED_TEXT").trim()+" ");
@@ -938,6 +943,12 @@ public class BuildDocument implements TagValueBehavior {
 			pkg.setHomepage(value);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_SOURCE_INFO"))) {
 			pkg.setSourceInfo(value);
+		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_BUILT_DATE"))) {
+			pkg.setBuiltDate(value);
+		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_RELEASE_DATE"))) {
+			pkg.setReleaseDate(value);
+		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_VALID_UNTIL_DATE"))) {
+			pkg.setValidUntilDate(value);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_CONCLUDED_LICENSE"))) {
 			AnyLicenseInfo licenseSet = LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager);
 			// can not verify any licenses at this point since the extracted license infos may not be set
@@ -1009,6 +1020,19 @@ public class BuildDocument implements TagValueBehavior {
 			pkg.setComment(value);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_ATTRIBUTION_TEXT"))) {
 			pkg.getAttributionText().add(value);
+		} else if (tag.equals(constants.getProperty("PROP_PRIMARY_PACKAGE_PURPOSE"))) {
+			Purpose purpose = null;
+			try {
+				purpose = Purpose.valueOf(value.trim());
+			} catch(IllegalArgumentException ex) {
+				try {
+					purpose = Purpose.valueOf(value.trim().toUpperCase());
+					this.warningMessages.add("Invalid Package Purpose - needs to be uppercased: "+value+" at line number "+lineNumber);
+				} catch(IllegalArgumentException ex2) {
+					throw(new InvalidSpdxTagFileException("Unknown Package Purpose: "+value+" at line number "+lineNumber));
+				}
+			}
+			pkg.setPrimaryPurpose(purpose);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_FILES_ANALYZED"))) {
 			if ("TRUE".equals(value.toUpperCase())) {
 				pkg.setFilesAnalyzed(true);

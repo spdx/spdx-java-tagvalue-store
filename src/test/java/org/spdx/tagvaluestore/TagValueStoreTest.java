@@ -39,7 +39,7 @@ import junit.framework.TestCase;
  */
 public class TagValueStoreTest extends TestCase {
 	
-	static final String TAG_VALUE_FILE_PATH = "testResources" + File.separator + "SPDXTagExample-v2.2.spdx";
+	static final String TAG_VALUE_FILE_PATH = "testResources" + File.separator + "SPDXTagExample-v2.3.spdx";
 
 
 	/* (non-Javadoc)
