@@ -1105,7 +1105,7 @@ public class BuildDocument implements TagValueBehavior {
 			throw(new InvalidSpdxTagFileException("Invalid checksum: "+value+" at line number "+lineNumber));
 		}
 		try {
-			ChecksumAlgorithm algorithm = ChecksumAlgorithm.valueOf(matcher.group(1));
+			ChecksumAlgorithm algorithm = ChecksumAlgorithm.valueOf(matcher.group(1).replaceAll("-","_"));
 			return document.createChecksum(algorithm, matcher.group(3));
 		} catch(IllegalArgumentException ex) {
 			throw(new InvalidSpdxTagFileException("Invalid checksum algorithm: "+value+" at line number "+lineNumber));

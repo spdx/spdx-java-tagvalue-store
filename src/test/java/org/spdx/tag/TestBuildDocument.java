@@ -163,7 +163,7 @@ public class TestBuildDocument extends TestCase {
 	static final String PACKAGE_CHECKSUM_MD5 = "624c1abb3664f4b35547e7c73864ad24";
 	static final String PACKAGE_CHECKSUM_MD5_TAG = "PackageChecksum: MD5: " + PACKAGE_CHECKSUM_MD5;
 	static final String PACKAGE_CHECKSUM_BLAKE2B = "aaabd89c926ab525c242e6621f2f5fa73aa4afe3d9e24aed727faaadd6af38b620bdb623dd2b4788b1c8086984af8706";
-	static final String PACKAGE_CHECKSUM_BLAKE2B_TAG = "PackageChecksum: BLAKE2b_384: " + PACKAGE_CHECKSUM_BLAKE2B;
+	static final String PACKAGE_CHECKSUM_BLAKE2B_TAG = "PackageChecksum: BLAKE2b-384: " + PACKAGE_CHECKSUM_BLAKE2B;
 	static final String PACKAGE_HOME_PAGE = "http://ftp.gnu.org/gnu/glibc";
 	static final String PACKAGE_HOME_PAGE_TAG = "PackageHomePage: " + PACKAGE_HOME_PAGE;
 	static final String PACKAGE_SOURCE_INFO = "uses glibc-2_11-branch from git://sourceware.org/git/glibc.git.";

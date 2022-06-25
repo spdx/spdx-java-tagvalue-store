@@ -739,7 +739,7 @@ public class CommonCode {
 	private static void printChecksum(Checksum checksum, PrintWriter out,
 			Properties constants, String checksumProperty) throws InvalidSPDXAnalysisException {
 		out.println(constants.getProperty(checksumProperty)
-				+ checksum.getAlgorithm().toString()
+				+ checksum.getAlgorithm().toString().replaceAll("_", "-")
 				+ ": " + checksum.getValue());
 	}
 
