@@ -19,6 +19,7 @@
  */
 package org.spdx.tagvaluestore;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -79,6 +80,21 @@ public class TagValueStoreTest extends TestCase {
 			assertTrue(doc.equivalent(compDoc));
 		} finally {
 			testToFile.delete();
+		}
+	}
+	
+	public void testDeSerializeNoAssertionCopyright() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
+		File tagValueFile = new File(TAG_VALUE_FILE_PATH);
+		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
+		String docUri = null;
+		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
+			docUri = tvs.deSerialize(tagValueInput, false);
+		}
+		try (ByteArrayOutputStream bas = new ByteArrayOutputStream()) {
+			tvs.serialize(docUri, bas);
+			String result = bas.toString();
+			assertFalse(result.contains("<text>NOASSERTION</text>"));
+			assertTrue(result.contains("PackageCopyrightText: NOASSERTION"));
 		}
 	}
 

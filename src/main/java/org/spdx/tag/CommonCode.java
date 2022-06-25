@@ -45,6 +45,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.Annotation;
 import org.spdx.library.model.Checksum;
 import org.spdx.library.model.ExternalDocumentRef;
@@ -606,11 +607,20 @@ public class CommonCode {
 					constants.getProperty("PROP_END_TEXT"));
 		}
 		// Declared copyright
-		if (pkg.getCopyrightText() != null
+		String copyrightText = pkg.getCopyrightText();
+		if (copyrightText != null
 				&& !pkg.getCopyrightText().isEmpty()) {
-			println(out, constants.getProperty("PROP_PACKAGE_DECLARED_COPYRIGHT")
-					+ constants.getProperty("PROP_BEGIN_TEXT") 
-					+ pkg.getCopyrightText() + constants.getProperty("PROP_END_TEXT"));
+			boolean encloseInText = !(SpdxConstants.NONE_VALUE.equals(copyrightText) ||
+					SpdxConstants.NOASSERTION_VALUE.equals(copyrightText));
+			print(out, constants.getProperty("PROP_PACKAGE_DECLARED_COPYRIGHT"));
+			if (encloseInText) {
+				print(out, constants.getProperty("PROP_BEGIN_TEXT"));
+			}
+			print(out, copyrightText);
+			if (encloseInText) {
+				print(out, constants.getProperty("PROP_END_TEXT"));
+			}
+			println(out, "");
 		}
 		// Short description
 		Optional<String> summary = pkg.getSummary();
@@ -826,6 +836,14 @@ public class CommonCode {
 			out.println(output);
 		} else {
 			System.out.println(output);
+		}
+	}
+	
+	private static void print(PrintWriter out, String output) {
+		if (out != null) {
+			out.print(output);
+		} else {
+			System.out.print(output);
 		}
 	}
 

@@ -173,7 +173,7 @@ PackageDownloadLocation: NOASSERTION
 PackageHomePage: http://commons.apache.org/proper/commons-lang/
 PackageLicenseConcluded: NOASSERTION
 PackageLicenseDeclared: NOASSERTION
-PackageCopyrightText: <text>NOASSERTION</text>
+PackageCopyrightText: NOASSERTION
 FilesAnalyzed: false
 
 ## Package Information
