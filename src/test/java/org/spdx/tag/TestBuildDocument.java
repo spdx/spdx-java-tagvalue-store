@@ -26,9 +26,11 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.ExternalRef;
 import org.spdx.library.model.ModelObject;
 import org.spdx.library.model.ReferenceType;
+import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxDocument;
 import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxFile;
@@ -38,6 +40,7 @@ import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.enumerations.FileType;
 import org.spdx.library.model.enumerations.ReferenceCategory;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
@@ -53,7 +56,7 @@ import junit.framework.TestCase;
 public class TestBuildDocument extends TestCase {
 
 	// Document level
-	static final String SPDX_VERSION = "SPDX-2.1";
+	static final String SPDX_VERSION = "SPDX-2.3";
 	static final String SPDX_VERSION_TAG = "SPDXVersion: " + SPDX_VERSION;
 	static final String DOC_DATA_LICENSE = "CC0-1.0";
 	static final String DOC_DATA_LICENSE_TAG = "DataLicense: " + DOC_DATA_LICENSE;
@@ -316,6 +319,32 @@ public class TestBuildDocument extends TestCase {
 		parser.data();
 		assertEquals(0, warnings.size());
 		assertEquals(0, new SpdxDocument(modelStore, DOC_NAMESPACE, null, false).verify().size());
+	}
+	
+	public void testPackagefiles() throws Exception {
+		InputStream bais = new ByteArrayInputStream(SIMPLE_TAGDOCUMENT.getBytes());
+		HandBuiltParser parser = new HandBuiltParser(new NoCommentInputStream(bais));
+		List<String> warnings = new ArrayList<>();
+		Properties constants = CommonCode.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
+		IModelStore modelStore = new InMemSpdxStore();
+		parser.setBehavior(new BuildDocument(modelStore, constants, warnings));
+		parser.data();
+		SpdxPackage pkg = new SpdxPackage(modelStore, DOC_NAMESPACE, PACKAGE_SPDXID, null, false);
+		assertEquals(1, pkg.getFiles().size());
+		for (SpdxFile spdxFile:pkg.getFiles()) {
+			assertEquals(FILE_LIB_FILENAME, spdxFile.getName().get());
+		}
+		boolean foundContains = false;
+		for (Relationship rel:pkg.getRelationships()) {
+			if (rel.getRelationshipType() == RelationshipType.CONTAINS && 
+					rel.getRelatedSpdxElement().get().getId().equals(FILE_LIB_SPDXID)) {
+				assertFalse(foundContains);
+				foundContains = true;
+			}
+		}
+		assertFalse(modelStore.getValue(
+				DOC_NAMESPACE, PACKAGE_SPDXID, 
+				SpdxConstants.PROP_PACKAGE_FILE).isPresent());
 	}
 
 	 public void testExternalRefs() throws Exception {
