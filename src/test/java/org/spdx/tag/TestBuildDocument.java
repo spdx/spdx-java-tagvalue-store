@@ -26,9 +26,12 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.SpdxConstants;
+import org.spdx.library.model.Checksum;
 import org.spdx.library.model.ExternalRef;
 import org.spdx.library.model.ModelObject;
 import org.spdx.library.model.ReferenceType;
+import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxDocument;
 import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxFile;
@@ -37,8 +40,11 @@ import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.enumerations.FileType;
+import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.enumerations.ReferenceCategory;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.LicenseInfoFactory;
+import org.spdx.library.model.license.SpdxNoAssertionLicense;
 import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -53,7 +59,7 @@ import junit.framework.TestCase;
 public class TestBuildDocument extends TestCase {
 
 	// Document level
-	static final String SPDX_VERSION = "SPDX-2.1";
+	static final String SPDX_VERSION = "SPDX-2.3";
 	static final String SPDX_VERSION_TAG = "SPDXVersion: " + SPDX_VERSION;
 	static final String DOC_DATA_LICENSE = "CC0-1.0";
 	static final String DOC_DATA_LICENSE_TAG = "DataLicense: " + DOC_DATA_LICENSE;
@@ -144,12 +150,20 @@ public class TestBuildDocument extends TestCase {
 	static final String PACKAGE_VERIFICATION_EXCLUDES = "(excludes: ./package.spdx)";
 	static final String PACKAGE_VERIFICATION_TAG = "PackageVerificationCode: " + PACKAGE_VERIFICATION_CODE + " " +
 			PACKAGE_VERIFICATION_EXCLUDES;
+	static final String BUILT_DATE = "2011-01-29T18:30:22Z";
+	static final String BUILT_DATE_TAG = "BuiltDate: " + BUILT_DATE;
+	static final String RELEASE_DATE = "2012-01-29T18:30:22Z";
+	static final String RELEASE_DATE_TAG = "ReleaseDate: " + RELEASE_DATE;
+	static final String VALID_UNTIL_DATE = "2014-01-29T18:30:22Z";
+	static final String VALID_UNTIL_DATE_TAG = "ValidUntilDate: " + VALID_UNTIL_DATE;
 	static final String PACKAGE_CHECKSUM_SHA1 = "85ed0817af83a24ad8da68c2b5094de69833983c";
 	static final String PACKAGE_CHECKSUM_SHA1_TAG = "PackageChecksum: SHA1: " + PACKAGE_CHECKSUM_SHA1;
 	static final String PACKAGE_CHECKSUM_SHA256 = "11b6d3ee554eedf79299905a98f9b9a04e498210b59f15094c916c91d150efcd";
 	static final String PACKAGE_CHECKSUM_SHA256_TAG = "PackageChecksum: SHA256: " + PACKAGE_CHECKSUM_SHA256;
 	static final String PACKAGE_CHECKSUM_MD5 = "624c1abb3664f4b35547e7c73864ad24";
 	static final String PACKAGE_CHECKSUM_MD5_TAG = "PackageChecksum: MD5: " + PACKAGE_CHECKSUM_MD5;
+	static final String PACKAGE_CHECKSUM_BLAKE2B = "aaabd89c926ab525c242e6621f2f5fa73aa4afe3d9e24aed727faaadd6af38b620bdb623dd2b4788b1c8086984af8706";
+	static final String PACKAGE_CHECKSUM_BLAKE2B_TAG = "PackageChecksum: BLAKE2b-384: " + PACKAGE_CHECKSUM_BLAKE2B;
 	static final String PACKAGE_HOME_PAGE = "http://ftp.gnu.org/gnu/glibc";
 	static final String PACKAGE_HOME_PAGE_TAG = "PackageHomePage: " + PACKAGE_HOME_PAGE;
 	static final String PACKAGE_SOURCE_INFO = "uses glibc-2_11-branch from git://sourceware.org/git/glibc.git.";
@@ -180,6 +194,8 @@ public class TestBuildDocument extends TestCase {
 			"POSIX and other derivatives of the Unix operating system,\n" +
 			" and extensions specific to GNU systems.";
 	static final String PACKAGE_DESCRIPTION_TAG = "PackageDescription: <text>" + PACKAGE_DESCRIPTION + "</text>";
+	static final String PACKAGE_PURPOSE = "SOURCE";
+	static final String PACKAGE_PURPOSE_TAG = "PrimaryPackagePurpose: " + PACKAGE_PURPOSE;
 	static final String EXTERNAL_REF_SECURITY_CATEGORY = "SECURITY";
 	static final String EXTERNAL_REF_SECURITY_TYPE = "cpe23Type";
 	static final String EXTERNAL_REF_SECURITY_LOCATOR = "cpe:2.3:a:pivotal_software:spring_framework:4.1.0:*:*:*:*:*:*:*";
@@ -197,15 +213,18 @@ public class TestBuildDocument extends TestCase {
 	static final String PACKAGE_TAGS = PACKAGE_NAME_TAG + "\n" + PACKAGE_SPDXID_TAG + "\n" +
 			PACKAGE_VERSION_TAG + "\n" + PACKAGE_FILENAME_TAG + "\n" +
 			PACKAGE_SUPPLIER_TAG + "\n" + PACKAGE_ORIGINATOR_TAG + "\n" +
+			BUILT_DATE_TAG + "\n" + RELEASE_DATE_TAG + "\n" + VALID_UNTIL_DATE_TAG + "\n" +
 			PACKAGE_DOWNLOAD_LOCATION_TAG + "\n" + PACKAGE_VERIFICATION_TAG + "\n" +
 			PACKAGE_CHECKSUM_SHA1_TAG + "\n" + PACKAGE_CHECKSUM_SHA256_TAG + "\n" +
-			PACKAGE_CHECKSUM_MD5_TAG + "\n" + PACKAGE_HOME_PAGE_TAG + "\n" +
+			PACKAGE_CHECKSUM_MD5_TAG + "\n" + PACKAGE_CHECKSUM_BLAKE2B_TAG + "\n" + 
+			PACKAGE_HOME_PAGE_TAG + "\n" +
 			PACKAGE_SOURCE_INFO_TAG + "\n" + PACKAGE_LICENSE_CONCLUDED_TAG + "\n" +
 			PACKAGE_LICENSE_INFO_FROM_FILES_TAGS + "\n" + PACKAGE_LICENSE_DECLARED_TAG + "\n" +
 			PACKAGE_LICENSE_COMMENT_TAG + "\n" + PACKAGE_COPYRIGHT_TAG + "\n" +
-			PACKAGE_SUMMARY_TAG + "\n" + PACKAGE_DESCRIPTION_TAG + "\n" +
+			PACKAGE_SUMMARY_TAG + "\n" + PACKAGE_DESCRIPTION_TAG + "\n" + PACKAGE_PURPOSE_TAG + "\n" +
 			PACKAGE_EXTERNAL_REF_SECURITY_TAG + "\n" + PACKAGE_EXTERNAL_REF_SECURITY_COMMENT_TAG + "\n" +
 			PACKAGE_EXTERNAL_REF_OTHER_TAG;
+	
 	static final String PACKAGE_NO_FILES_TAG = "FilesAnalyzed: false";
 	static final String PACKAGE_TAGS_NO_FILES = PACKAGE_NAME_TAG + "\n" + PACKAGE_SPDXID_TAG + "\n" +
 			PACKAGE_VERSION_TAG + "\n" + PACKAGE_FILENAME_TAG + "\n" +
@@ -216,6 +235,17 @@ public class TestBuildDocument extends TestCase {
 			PACKAGE_SOURCE_INFO_TAG + "\n" + PACKAGE_LICENSE_CONCLUDED_TAG + "\n" +
 			PACKAGE_LICENSE_INFO_FROM_FILES_TAGS + "\n" + PACKAGE_LICENSE_DECLARED_TAG + "\n" +
 			PACKAGE_LICENSE_COMMENT_TAG + "\n" + PACKAGE_COPYRIGHT_TAG + "\n" +
+			PACKAGE_SUMMARY_TAG + "\n" + PACKAGE_DESCRIPTION_TAG + "\n" +
+			PACKAGE_EXTERNAL_REF_SECURITY_TAG + "\n" + PACKAGE_EXTERNAL_REF_SECURITY_COMMENT_TAG + "\n" +
+			PACKAGE_EXTERNAL_REF_OTHER_TAG + "\n" + PACKAGE_NO_FILES_TAG;
+	
+	static final String PACKAGE_TAGS_NO_LICENSE = PACKAGE_NAME_TAG + "\n" + PACKAGE_SPDXID_TAG + "\n" +
+			PACKAGE_VERSION_TAG + "\n" + PACKAGE_FILENAME_TAG + "\n" +
+			PACKAGE_SUPPLIER_TAG + "\n" + PACKAGE_ORIGINATOR_TAG + "\n" +
+			PACKAGE_DOWNLOAD_LOCATION_TAG + "\n" +
+			PACKAGE_CHECKSUM_SHA1_TAG + "\n" + PACKAGE_CHECKSUM_SHA256_TAG + "\n" +
+			PACKAGE_CHECKSUM_MD5_TAG + "\n" + PACKAGE_HOME_PAGE_TAG + "\n" +
+			PACKAGE_SOURCE_INFO_TAG + "\n" +
 			PACKAGE_SUMMARY_TAG + "\n" + PACKAGE_DESCRIPTION_TAG + "\n" +
 			PACKAGE_EXTERNAL_REF_SECURITY_TAG + "\n" + PACKAGE_EXTERNAL_REF_SECURITY_COMMENT_TAG + "\n" +
 			PACKAGE_EXTERNAL_REF_OTHER_TAG + "\n" + PACKAGE_NO_FILES_TAG;
@@ -304,6 +334,11 @@ public class TestBuildDocument extends TestCase {
 			CREATOR_TAGS + "\n" + DOC_ANNOTATION_TAGS + "\n" + DOC_RELATIONSHIP_TAGS + "\n" +
 			PACKAGE_TAGS_NO_FILES + "\n" + LICENSE_REF1_TAGS + "\n" +
 			LICENSE_REF2_TAGS;
+	
+	String TAGDOCUMENT_NO_PACKAGE_LICENSE = DOC_LEVEL_TAGS + "\n" + EXTERNAL_DOC_REF_TAGS + "\n" +
+			CREATOR_TAGS + "\n" + DOC_ANNOTATION_TAGS + "\n" + DOC_RELATIONSHIP_TAGS + "\n" +
+			PACKAGE_TAGS_NO_LICENSE + "\n" + LICENSE_REF1_TAGS + "\n" +
+			LICENSE_REF2_TAGS;
 
 	
 	public void testBuildSimpleDocument() throws Exception {
@@ -316,6 +351,80 @@ public class TestBuildDocument extends TestCase {
 		parser.data();
 		assertEquals(0, warnings.size());
 		assertEquals(0, new SpdxDocument(modelStore, DOC_NAMESPACE, null, false).verify().size());
+	}
+	
+	public void testPackagefiles() throws Exception {
+		InputStream bais = new ByteArrayInputStream(SIMPLE_TAGDOCUMENT.getBytes());
+		HandBuiltParser parser = new HandBuiltParser(new NoCommentInputStream(bais));
+		List<String> warnings = new ArrayList<>();
+		Properties constants = CommonCode.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
+		IModelStore modelStore = new InMemSpdxStore();
+		parser.setBehavior(new BuildDocument(modelStore, constants, warnings));
+		parser.data();
+		SpdxPackage pkg = new SpdxPackage(modelStore, DOC_NAMESPACE, PACKAGE_SPDXID, null, false);
+		assertEquals(1, pkg.getFiles().size());
+		for (SpdxFile spdxFile:pkg.getFiles()) {
+			assertEquals(FILE_LIB_FILENAME, spdxFile.getName().get());
+		}
+		boolean foundContains = false;
+		for (Relationship rel:pkg.getRelationships()) {
+			if (rel.getRelationshipType() == RelationshipType.CONTAINS && 
+					rel.getRelatedSpdxElement().get().getId().equals(FILE_LIB_SPDXID)) {
+				assertFalse(foundContains);
+				foundContains = true;
+			}
+		}
+		assertFalse(modelStore.getValue(
+				DOC_NAMESPACE, PACKAGE_SPDXID, 
+				SpdxConstants.PROP_PACKAGE_FILE).isPresent());
+	}
+	
+	public void testVersion2dot3noLicense() throws Exception {
+		InputStream bais = new ByteArrayInputStream(TAGDOCUMENT_NO_PACKAGE_LICENSE.getBytes());
+		HandBuiltParser parser = new HandBuiltParser(new NoCommentInputStream(bais));
+		List<String> warnings = new ArrayList<>();
+		Properties constants = CommonCode.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
+		IModelStore modelStore = new InMemSpdxStore();
+		parser.setBehavior(new BuildDocument(modelStore, constants, warnings));
+		parser.data();
+		assertEquals(0, warnings.size());
+		assertEquals(0, new SpdxDocument(modelStore, DOC_NAMESPACE, null, false).verify().size());
+		SpdxPackage pkg = new SpdxPackage(modelStore, DOC_NAMESPACE, PACKAGE_SPDXID, null, false);
+		// no license concluded
+		assertEquals(new SpdxNoAssertionLicense(), pkg.getLicenseConcluded());
+		// no copyright
+		assertEquals("", pkg.getCopyrightText());
+		// no license declared
+		assertEquals(new SpdxNoAssertionLicense(), pkg.getLicenseDeclared());
+	}
+	
+	public void testVersion2dot3() throws Exception {
+		InputStream bais = new ByteArrayInputStream(SIMPLE_TAGDOCUMENT.getBytes());
+		HandBuiltParser parser = new HandBuiltParser(new NoCommentInputStream(bais));
+		List<String> warnings = new ArrayList<>();
+		Properties constants = CommonCode.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
+		IModelStore modelStore = new InMemSpdxStore();
+		parser.setBehavior(new BuildDocument(modelStore, constants, warnings));
+		parser.data();
+		assertEquals(0, warnings.size());
+		assertEquals(0, new SpdxDocument(modelStore, DOC_NAMESPACE, null, false).verify().size());
+		SpdxPackage pkg = new SpdxPackage(modelStore, DOC_NAMESPACE, PACKAGE_SPDXID, null, false);
+		// additional hash algorithms
+		boolean foundHash = false;
+		for (Checksum ck:pkg.getChecksums()) {
+			if (ck.getAlgorithm().equals(ChecksumAlgorithm.BLAKE2b_384)) {
+				foundHash = true;
+			}
+		}
+		assertTrue(foundHash);
+		// package purpose
+		assertEquals(Purpose.SOURCE, pkg.getPrimaryPurpose().get());
+		// release date
+		assertEquals(RELEASE_DATE, pkg.getReleaseDate().get());
+		// built date
+		assertEquals(BUILT_DATE, pkg.getBuiltDate().get());
+		// valid until date
+		assertEquals(VALID_UNTIL_DATE, pkg.getValidUntilDate().get());
 	}
 
 	 public void testExternalRefs() throws Exception {

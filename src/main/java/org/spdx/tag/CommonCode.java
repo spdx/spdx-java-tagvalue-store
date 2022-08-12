@@ -45,6 +45,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.Annotation;
 import org.spdx.library.model.Checksum;
 import org.spdx.library.model.ExternalDocumentRef;
@@ -58,6 +59,7 @@ import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxPackageVerificationCode;
 import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.enumerations.FileType;
+import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.ExtractedLicenseInfo;
 import org.spdx.library.model.license.SimpleLicensingInfo;
@@ -510,6 +512,26 @@ public class CommonCode {
 					constants.getProperty("PROP_PACKAGE_DOWNLOAD_URL")
 							+ downloadLocation.get());
 		}
+		// Primary Package Purpose
+		Optional<Purpose> purpose = pkg.getPrimaryPurpose();
+		if (purpose.isPresent()) {
+			println(out, constants.getProperty("PROP_PRIMARY_PACKAGE_PURPOSE") + purpose.get().toString());
+		}
+		// release date
+		Optional<String> releaseDate = pkg.getReleaseDate();
+		if (releaseDate.isPresent()) {
+			println(out, constants.getProperty("PROP_PACKAGE_RELEASE_DATE") + releaseDate.get());
+		}
+		// Built date
+		Optional<String> builtDate = pkg.getBuiltDate();
+		if (builtDate.isPresent()) {
+			println(out, constants.getProperty("PROP_PACKAGE_BUILT_DATE") + builtDate.get());
+		}
+		// Valid until date
+		Optional<String> validUntilDate = pkg.getValidUntilDate();
+		if (validUntilDate.isPresent()) {
+			println(out, constants.getProperty("PROP_PACKAGE_VALID_UNTIL_DATE") + validUntilDate.get());
+		}
 		// package verification code
 		Optional<SpdxPackageVerificationCode> verificationCode = pkg.getPackageVerificationCode();
         if (verificationCode.isPresent()
@@ -585,11 +607,20 @@ public class CommonCode {
 					constants.getProperty("PROP_END_TEXT"));
 		}
 		// Declared copyright
-		if (pkg.getCopyrightText() != null
+		String copyrightText = pkg.getCopyrightText();
+		if (copyrightText != null
 				&& !pkg.getCopyrightText().isEmpty()) {
-			println(out, constants.getProperty("PROP_PACKAGE_DECLARED_COPYRIGHT")
-					+ constants.getProperty("PROP_BEGIN_TEXT") 
-					+ pkg.getCopyrightText() + constants.getProperty("PROP_END_TEXT"));
+			boolean encloseInText = !(SpdxConstants.NONE_VALUE.equals(copyrightText) ||
+					SpdxConstants.NOASSERTION_VALUE.equals(copyrightText));
+			print(out, constants.getProperty("PROP_PACKAGE_DECLARED_COPYRIGHT"));
+			if (encloseInText) {
+				print(out, constants.getProperty("PROP_BEGIN_TEXT"));
+			}
+			print(out, copyrightText);
+			if (encloseInText) {
+				print(out, constants.getProperty("PROP_END_TEXT"));
+			}
+			println(out, "");
 		}
 		// Short description
 		Optional<String> summary = pkg.getSummary();
@@ -708,7 +739,7 @@ public class CommonCode {
 	private static void printChecksum(Checksum checksum, PrintWriter out,
 			Properties constants, String checksumProperty) throws InvalidSPDXAnalysisException {
 		out.println(constants.getProperty(checksumProperty)
-				+ checksum.getAlgorithm().toString()
+				+ checksum.getAlgorithm().toString().replaceAll("_", "-")
 				+ ": " + checksum.getValue());
 	}
 
@@ -805,6 +836,14 @@ public class CommonCode {
 			out.println(output);
 		} else {
 			System.out.println(output);
+		}
+	}
+	
+	private static void print(PrintWriter out, String output) {
+		if (out != null) {
+			out.print(output);
+		} else {
+			System.out.print(output);
 		}
 	}
 
