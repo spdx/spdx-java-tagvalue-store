@@ -49,7 +49,7 @@ LicenseConcluded: (LGPL-2.0-only OR LicenseRef-2)
 LicenseInfoInFile: GPL-2.0-only
 LicenseInfoInFile: LicenseRef-2
 LicenseComments: The concluded license was taken from the package level that the file was included in.
-FileCopyrightText: <text>Copyright 2008-2010 John Smith</text>
+FileCopyrightText: NOASSERTION
 FileNotice: <text>Copyright (c) 2001 Aaron Lehmann aaroni@vitelus.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: 
@@ -208,7 +208,7 @@ SnippetLineRange: 5:23
 SnippetLicenseConcluded: GPL-2.0-only
 LicenseInfoInSnippet: GPL-2.0-only
 SnippetLicenseComments: The concluded license was taken from package xyz, from which the snippet was copied into the current file. The concluded license information was found in the COPYING.txt file in package xyz.
-SnippetCopyrightText: Copyright 2008-2010 John Smith
+SnippetCopyrightText: NOASSERTION
 SnippetComment: This snippet was identified as significant and highlighted in this Apache-2.0 file, when a commercial scanner identified it as being derived from file foo.c in package xyz which is licensed under GPL-2.0.
 SnippetName: from linux kernel
 
