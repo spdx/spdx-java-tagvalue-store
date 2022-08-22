@@ -272,8 +272,9 @@ public class CommonCode {
 			        licenseComment.get());
 		}
 		if (spdxSnippet.getCopyrightText() != null && !spdxSnippet.getCopyrightText().trim().isEmpty()) {
+			String copyrightText = formatCopyrightText(constants, spdxSnippet.getCopyrightText());
 			println(out, constants.getProperty("PROP_SNIPPET_COPYRIGHT") +
-					spdxSnippet.getCopyrightText());
+					copyrightText);
 		}
 		Optional<String> comment = spdxSnippet.getComment();
 		if (comment.isPresent() && !comment.get().trim().isEmpty()) {
@@ -607,19 +608,11 @@ public class CommonCode {
 					constants.getProperty("PROP_END_TEXT"));
 		}
 		// Declared copyright
-		String copyrightText = pkg.getCopyrightText();
+		String copyrightText = formatCopyrightText(constants, pkg.getCopyrightText());
 		if (copyrightText != null
 				&& !pkg.getCopyrightText().isEmpty()) {
-			boolean encloseInText = !(SpdxConstants.NONE_VALUE.equals(copyrightText) ||
-					SpdxConstants.NOASSERTION_VALUE.equals(copyrightText));
 			print(out, constants.getProperty("PROP_PACKAGE_DECLARED_COPYRIGHT"));
-			if (encloseInText) {
-				print(out, constants.getProperty("PROP_BEGIN_TEXT"));
-			}
 			print(out, copyrightText);
-			if (encloseInText) {
-				print(out, constants.getProperty("PROP_END_TEXT"));
-			}
 			println(out, "");
 		}
 		// Short description
@@ -675,6 +668,20 @@ public class CommonCode {
 			}
 		} else {
 			println(out, "");
+		}
+	}
+
+	/**
+	 * @param copyrightText
+	 * @return
+	 */
+	private static String formatCopyrightText(Properties constants, String copyrightText) {
+		boolean encloseInText = !(SpdxConstants.NONE_VALUE.equals(copyrightText) ||
+				SpdxConstants.NOASSERTION_VALUE.equals(copyrightText));
+		if (encloseInText) {
+			return constants.getProperty("PROP_BEGIN_TEXT") + copyrightText + constants.getProperty("PROP_END_TEXT");
+		} else {
+			return copyrightText;
 		}
 	}
 
@@ -789,9 +796,9 @@ public class CommonCode {
 		}
 		// file copyright
 		if (file.getCopyrightText() != null && !file.getCopyrightText().isEmpty()) {
+			String copyrightText = formatCopyrightText(constants, file.getCopyrightText());
 			println(out, constants.getProperty("PROP_FILE_COPYRIGHT") 
-					+ constants.getProperty("PROP_BEGIN_TEXT")
-					+ file.getCopyrightText() + constants.getProperty("PROP_END_TEXT"));
+					+ copyrightText);
 		}
 		// File notice
 		Optional<String> noticeText = file.getNoticeText();

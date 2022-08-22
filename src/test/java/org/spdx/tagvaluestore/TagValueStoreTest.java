@@ -95,6 +95,8 @@ public class TagValueStoreTest extends TestCase {
 			String result = bas.toString();
 			assertFalse(result.contains("<text>NOASSERTION</text>"));
 			assertTrue(result.contains("PackageCopyrightText: NOASSERTION"));
+			assertTrue(result.contains("FileCopyrightText: NOASSERTION"));
+			assertTrue(result.contains("SnippetCopyrightText: NOASSERTION"));
 		}
 	}
 
