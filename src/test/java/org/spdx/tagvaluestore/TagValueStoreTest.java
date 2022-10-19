@@ -28,7 +28,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxDocument;
+import org.spdx.library.model.SpdxFile;
+import org.spdx.library.model.SpdxPackage;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.storage.simple.InMemSpdxStore;
 import org.spdx.utility.compare.SpdxCompareException;
 
@@ -41,6 +45,7 @@ import junit.framework.TestCase;
 public class TagValueStoreTest extends TestCase {
 	
 	static final String TAG_VALUE_FILE_PATH = "testResources" + File.separator + "SPDXTagExample-v2.3.spdx";
+	private static final String ARTIFACT_OF_FILE_PATH = "testResources" + File.separator + "artifactof.spdx";
 
 
 	/* (non-Javadoc)
@@ -98,6 +103,21 @@ public class TagValueStoreTest extends TestCase {
 			assertTrue(result.contains("FileCopyrightText: NOASSERTION"));
 			assertTrue(result.contains("SnippetCopyrightText: NOASSERTION"));
 		}
+	}
+	
+	public void testArtifactOf() throws InvalidSPDXAnalysisException, IOException {
+		File tagValueFile = new File(ARTIFACT_OF_FILE_PATH);
+		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
+		String docUri = null;
+		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
+			docUri = tvs.deSerialize(tagValueInput, false);
+		}
+		SpdxFile fileWithArtifactOf = new SpdxFile(tvs, docUri, "SPDXRef-File", null, false);
+		Relationship[] relationships = fileWithArtifactOf.getRelationships().toArray(new Relationship[fileWithArtifactOf.getRelationships().size()]);
+		assertEquals(1, relationships.length);
+		assertEquals(RelationshipType.GENERATED_FROM, relationships[0].getRelationshipType());
+		SpdxPackage relatedPackage = (SpdxPackage)(relationships[0].getRelatedSpdxElement().get());
+		assertEquals("AcmeTest", relatedPackage.getName().get());
 	}
 
 }

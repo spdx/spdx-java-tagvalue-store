@@ -158,7 +158,7 @@ public class BuildDocument implements TagValueBehavior {
 			this.pkg = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.SpdxId, documentNamespace), copyManager, true);
 			pkg.setName(projectName);
 			pkg.setComment("This package was created to replace a deprecated DoapProject");
-			relationship = file.createRelationship(file, RelationshipType.GENERATED_FROM, "This relationship was translated from an deprecated ArtifactOf");
+			relationship = file.createRelationship(pkg, RelationshipType.GENERATED_FROM, "This relationship was translated from an deprecated ArtifactOf");
 			file.getRelationships().add(relationship);
 		}
 
