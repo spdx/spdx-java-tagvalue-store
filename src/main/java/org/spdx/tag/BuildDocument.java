@@ -147,6 +147,21 @@ public class BuildDocument implements TagValueBehavior {
 		public int getLineNumber() {
 			return lineNumber;
 		}
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof RelationshipWithId)) {
+				return false;
+			}
+			RelationshipWithId compare = (RelationshipWithId)o;
+			return Objects.equals(id, compare.getId()) && 
+					Objects.equals(relatedId, compare.getRelatedId()) &&
+					Objects.equals(relationshipType, compare.getRelationshipType());
+		}
+		
+		@Override
+		public int hashCode() {
+			return 79 ^ id.hashCode() ^ relatedId.hashCode() ^ relationshipType.hashCode();
+		}
 	}
 	
 	private class DoapProject {
@@ -236,8 +251,9 @@ public class BuildDocument implements TagValueBehavior {
 	private RelationshipWithId lastRelationship = null;
 	/**
 	 * Keep track of all relationships and add them at the end of the parsing
+	 * Map of ID for the element to a map of the related element to the relationship with ID
 	 */
-	private List<RelationshipWithId> relationships = new ArrayList<>();
+	private Map<String, Map<String, List<RelationshipWithId>>> relationships = new HashMap<>();
 	/**
 	 * Keep track of the last annotation for any following annotation related tags
 	 */
@@ -476,7 +492,7 @@ public class BuildDocument implements TagValueBehavior {
 			lastAnnotation = new AnnotationWithId(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP"))) {
 			if (lastRelationship != null) {
-				relationships.add(lastRelationship);
+				addToRelationships(lastRelationship);
 			}
 			lastRelationship = parseRelationship(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP_COMMENT"))) {
@@ -486,6 +502,26 @@ public class BuildDocument implements TagValueBehavior {
 			lastRelationship.setComment(value);
 		} else {
 			throw new InvalidSPDXAnalysisException("Error parsing snippet.  Unrecognized tag: "+tag + " at line number " + lineNumber);
+		}
+	}
+	
+	/**
+	 * Adds a relationship to the map of relationships wich will be added to the document at the end of parsing
+	 * @param relationship relationship to add
+	 */
+	private void addToRelationships(RelationshipWithId relationship) {
+		Map<String, List<RelationshipWithId>> relationshipsForId = this.relationships.get(relationship.getId());
+		if (Objects.isNull(relationshipsForId)) {
+			relationshipsForId = new HashMap<>();
+			this.relationships.put(relationship.getId(), relationshipsForId);
+		}
+		List<RelationshipWithId> relationshipsForRelatedId = relationshipsForId.get(relationship.getRelatedId());
+		if (Objects.isNull(relationshipsForRelatedId)) {
+			relationshipsForRelatedId = new ArrayList<>();
+			relationshipsForId.put(relationship.getRelatedId(), relationshipsForRelatedId);
+		}
+		if (!relationshipsForRelatedId.contains(relationship)) {
+			relationshipsForRelatedId.add(relationship);
 		}
 	}
 
@@ -604,7 +640,7 @@ public class BuildDocument implements TagValueBehavior {
 			addExternalDocRef(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP"))) {
 			if (lastRelationship != null) {
-				relationships.add(lastRelationship);
+				addToRelationships(lastRelationship);
 			}
 			lastRelationship = parseRelationship(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP_COMMENT"))) {
@@ -772,12 +808,12 @@ public class BuildDocument implements TagValueBehavior {
 			for (String depdendeFileName:lastFileDependencies) {
 				addFileDependency(newFile, depdendeFileName);
 			}
-			lastFileDependencies.clear();
-			lastFileId = null;
-			if (lastPackage != null && !this.lastPackage.getFiles().contains(newFile)) {
-				this.lastPackage.addFile(newFile);
+			
+			if (lastPackage != null) {
+				addToRelationships(new RelationshipWithId(lastPackageId, lastFileId, RelationshipType.CONTAINS, this.lastFileLineNumber));
 			}
 			elementIdLineNumberMap.put(lastFileId,lastFileLineNumber);
+			lastFileDependencies.clear();
 			lastFileId = null;
 		}
 		this.lastFile = null;
@@ -990,7 +1026,7 @@ public class BuildDocument implements TagValueBehavior {
 			lastAnnotation = new AnnotationWithId(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP"))) {
 			if (lastRelationship != null) {
-				relationships.add(lastRelationship);
+				addToRelationships(lastRelationship);
 			}
 			lastRelationship = parseRelationship(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP_COMMENT"))) {
@@ -1177,7 +1213,7 @@ public class BuildDocument implements TagValueBehavior {
 			lastAnnotation = new AnnotationWithId(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP"))) {
 			if (lastRelationship != null) {
-				relationships.add(lastRelationship);
+				addToRelationships(lastRelationship);
 			}
 			lastRelationship = parseRelationship(value, lineNumber);
 		} else if (tag.equals(constants.getProperty("PROP_RELATIONSHIP_COMMENT"))) {
@@ -1366,63 +1402,69 @@ public class BuildDocument implements TagValueBehavior {
 	}
 
 	/**
+	 * Called at the end - adds all relationships to their actual elements
 	 * @throws InvalidSPDXAnalysisException
 	 *
 	 */
 	private void addRelationships() throws InvalidSPDXAnalysisException {
 		if (this.lastRelationship != null) {
-			this.relationships.add(lastRelationship);
+			addToRelationships(lastRelationship);
 			lastRelationship = null;
 		}
-		for (int i = 0; i < relationships.size(); i++) {
-			RelationshipWithId relationship = relationships.get(i);
-			String id = relationship.getId();
+		for (Entry<String, Map<String, List<RelationshipWithId>>> entry : this.relationships.entrySet()) {
+			String id = entry.getKey();
 			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, id,  copyManager);
 			if (!mo.isPresent()) {
-				this.warningMessages.add("Invalid element reference in relationship: " + id + " at line number "+relationship.getLineNumber());
+				this.warningMessages.add("Invalid element reference in relationship: " + id + ".  The element itself was not defined in the SPDX document.");
 				continue;
 			}
 			SpdxElement element = null;
 			try {
 				element = (SpdxElement)mo.get();
 			} catch(ClassCastException ex) {
-				this.warningMessages.add("Invalid element reference in relationship: " + id + " at line number "+relationship.getLineNumber());
+				this.warningMessages.add("Invalid element reference in relationship: " + id + " The element itself could not be created do to SPDX exception ("+ex.getMessage()+").");
 				continue;
 			}
-			
-			SpdxElement relatedElement = null;
-			if (SpdxNoneElement.NONE_ELEMENT_ID.equals(relationship.getRelatedId())) {
-				relatedElement = new SpdxNoneElement();
-			} else if (SpdxNoAssertionElement.NOASSERTION_ELEMENT_ID.equals(relationship.getRelatedId())) {
-				relatedElement = new SpdxNoAssertionElement();
-			} else {
-				Optional<ModelObject> relatedMo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, relationship.getRelatedId(),  copyManager);
-				if (!relatedMo.isPresent()) {
-					this.warningMessages.add("Invalid related element reference in relationship: " + relationship.getRelatedId() + " at line number "+relationship.getLineNumber());
-					continue;
-				}
-				try {
-					relatedElement = (SpdxElement)relatedMo.get();
-				} catch(ClassCastException ex) {
-					this.warningMessages.add("Invalid related element reference in relationship: " + id + " at line number "+relationship.getLineNumber());
-					continue;
-				}
-			}
-			boolean dup = false;
-			// check for any duplicate relationships
+			Map<String, Set<RelationshipType>> existingRelationships = new HashMap<>();
 			for (Relationship existingRelationship:element.getRelationships()) {
-				if (relationship.getRelationshipType().equals(existingRelationship.getRelationshipType()) &&
-						existingRelationship.getRelatedSpdxElement().isPresent() &&
-						relatedElement.getId().equals(existingRelationship.getRelatedSpdxElement().get().getId())) {
-					dup = true;
-					break;
+				Set<RelationshipType> existingRelationshipTypes = existingRelationships.get(existingRelationship.getId());
+				if (Objects.isNull(existingRelationshipTypes)) {
+					existingRelationshipTypes = new HashSet<>();
+					existingRelationships.put(existingRelationship.getId(), existingRelationshipTypes);
 				}
+				existingRelationshipTypes.add(existingRelationship.getRelationshipType());
 			}
-			if (!dup) {
-				Relationship newRelationship = element.createRelationship(relatedElement, relationship.getRelationshipType(), 
-						relationship.getComment());
-				verifyElement(newRelationship.verify(), "Relationship", relationships.get(i).getLineNumber());
-				element.addRelationship(newRelationship);
+			for (Entry<String, List<RelationshipWithId>> relatedElementEntry:entry.getValue().entrySet()) {
+				SpdxElement relatedElement = null;
+				String relatedElementId = relatedElementEntry.getKey();
+
+				if (SpdxNoneElement.NONE_ELEMENT_ID.equals(relatedElementId)) {
+					relatedElement = new SpdxNoneElement();
+				} else if (SpdxNoAssertionElement.NOASSERTION_ELEMENT_ID.equals(relatedElementId)) {
+					relatedElement = new SpdxNoAssertionElement();
+				} else {
+					Optional<ModelObject> relatedMo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, relatedElementId,  copyManager);
+					if (!relatedMo.isPresent()) {
+						this.warningMessages.add("Invalid related element reference in relationship: " + relatedElementId);
+						continue;
+					}
+					try {
+						relatedElement = (SpdxElement)relatedMo.get();
+					} catch(ClassCastException ex) {
+						this.warningMessages.add("Invalid related element reference in relationship: " + id);
+						continue;
+					}
+				}
+				for (RelationshipWithId relwId:relatedElementEntry.getValue()) {
+					if (existingRelationships.containsKey(relatedElementId) && existingRelationships.get(relatedElementId).contains(relwId.getRelationshipType())) {
+						// Duplicate - we can skip
+						continue;
+					}
+					Relationship newRelationship = element.createRelationship(relatedElement, relwId.getRelationshipType(), 
+							relwId.getComment());
+					verifyElement(newRelationship.verify(), "Relationship", relwId.getLineNumber());
+					element.addRelationship(newRelationship);
+				}
 			}
 		}
 	}
