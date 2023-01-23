@@ -137,8 +137,7 @@ public class NoCommentInputStream extends InputStream {
 	}
 
 	/**
-	 * Searches for the string in the file stored in FileLine and returns the line no. if found.
-	 * @param string to be searched in the file
+	 * line number in the current reader
 	 */
 	public int getCurrentLineNo(){
 		return currentLineNo;
