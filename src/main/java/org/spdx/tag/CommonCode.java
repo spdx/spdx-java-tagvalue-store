@@ -37,11 +37,13 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
@@ -75,6 +77,58 @@ import org.spdx.library.referencetype.ListedReferenceTypes;
  * @author Rana Rahal, Protecode Inc.
  */
 public class CommonCode {
+	
+	static final Comparator<AnyLicenseInfo> LICENSE_COMPARATOR = new Comparator<AnyLicenseInfo>() {
+
+		@Override
+		public int compare(AnyLicenseInfo o1, AnyLicenseInfo o2) {
+			return o1.toString().compareTo(o2.toString());
+		}
+		
+	};
+	
+	static final Comparator<SpdxElement> ELEMENT_COMPARATOR = new Comparator<SpdxElement>() {
+
+		@Override
+		public int compare(SpdxElement arg0, SpdxElement arg1) {
+			if (arg0 == null && arg1 == null) {
+				return 0;
+			} else if (arg0 == null) {
+				return -1;
+			} else if (arg1 == null) {
+				return 1;
+			} else {
+				Optional<String> name0;
+				try {
+					name0 = arg0.getName();
+				} catch (InvalidSPDXAnalysisException e) {
+					name0 = Optional.empty();
+				}
+				Optional<String> name1;
+				try {
+					name1 = arg1.getName();
+				} catch (InvalidSPDXAnalysisException e) {
+					name1 = Optional.empty();
+				}
+				int retval = 0;
+				if (name0.isPresent() && !name1.isPresent()) {
+					retval = 1;
+				} else if (name1.isPresent() && !name0.isPresent()) {
+					retval = -1;
+				} else if (name1.isPresent() && name0.isPresent()) {
+					retval = name0.get().compareTo(name1.get());
+				} else {
+					retval = 0;
+				}
+				if (retval == 0) {
+					// use the ID
+					retval = arg0.getId().compareTo(arg1.getId());
+				}
+				return retval;
+			}
+		}
+		
+	};
 	/**
 	 * @param doc
 	 * @param out
@@ -114,8 +168,9 @@ public class CommonCode {
 		printElementProperties(doc, out, constants, "PROP_DOCUMENT_NAME", "PROP_SPDX_COMMENT");
 		println(out, "");
 		// External References
-		Collection<ExternalDocumentRef> externalRefs = doc.getExternalDocumentRefs();
+		List<ExternalDocumentRef> externalRefs = new ArrayList<>(doc.getExternalDocumentRefs());
 		if (externalRefs != null && !externalRefs.isEmpty()) {
+			Collections.sort(externalRefs);
 			String externalDocRefHedr = constants.getProperty("EXTERNAL_DOC_REFS_HEADER");
 			if (externalDocRefHedr != null && !externalDocRefHedr.isEmpty()) {
 				println(out, externalDocRefHedr);
@@ -125,8 +180,9 @@ public class CommonCode {
 			}
 		}
 		// Creators
-		Collection<String> creators = doc.getCreationInfo().getCreators();
+		List<String> creators = new ArrayList<>(doc.getCreationInfo().getCreators());
 		if (!creators.isEmpty()) {
+			Collections.sort(creators);
 			println(out, constants.getProperty("CREATION_INFO_HEADER"));
 			for (String creator:creators) {
 				println(out, constants.getProperty("PROP_CREATION_CREATOR")
@@ -158,21 +214,22 @@ public class CommonCode {
 		printElementAnnotationsRelationships(doc, out, constants, "PROP_DOCUMENT_NAME", "PROP_SPDX_COMMENT");
 		println(out, "");
 		// Print the actual files
-		final List<SpdxPackage> allPackages = new ArrayList<>();
+		final Set<SpdxPackage> allPackages = new HashSet<>();
 		try(@SuppressWarnings("unchecked")
             Stream<SpdxPackage> allPackagesStream = (Stream<SpdxPackage>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
                 doc.getCopyManager(), SpdxPackage.class)) {
 		    allPackagesStream.forEach((SpdxPackage pkg) -> allPackages.add(pkg));
 		}
-		final List<SpdxFile> allFiles = new ArrayList<>();
+		final Set<SpdxFile> allFiles = new HashSet<>();
 		try(@SuppressWarnings("unchecked")
 		    Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
 				doc.getCopyManager(), SpdxFile.class)) {
 		    allFilesStream.forEach((SpdxFile file) -> allFiles.add(file));
 		}
 		// first print out any described files or snippets
-		final List<SpdxElement> alreadyPrinted = new ArrayList<>();
-		Collection<SpdxElement> items = doc.getDocumentDescribes();
+		final Set<SpdxElement> alreadyPrinted = new HashSet<>();
+		List<SpdxElement> items = new ArrayList<>(doc.getDocumentDescribes());
+		Collections.sort(items, ELEMENT_COMPARATOR);
 		for (SpdxElement item:items) {
 			if (item instanceof SpdxFile) {
 				printFile((SpdxFile)item, out, constants);
@@ -190,22 +247,32 @@ public class CommonCode {
 			}
 		}
 		// print remaining packages
+		ArrayList<SpdxPackage> remainingPackages = new ArrayList<>();
 		allPackages.forEach((SpdxPackage pkg) -> {
 			if (!alreadyPrinted.contains(pkg)) {
-				try {
-					printPackage(pkg, out, constants, allFiles, doc.getDocumentUri());
-				} catch (InvalidSPDXAnalysisException e) {
-					out.println("Error printing package: "+e.getMessage());
-				}
+				remainingPackages.add(pkg);
 			}
 		});
+		Collections.sort(remainingPackages);
+		remainingPackages.forEach((SpdxPackage pkg) -> {
+			try {
+				printPackage(pkg, out, constants, allFiles, doc.getDocumentUri());
+			} catch (InvalidSPDXAnalysisException e) {
+				out.println("Error printing package: "+e.getMessage());
+			}
+		});
+		ArrayList<SpdxFile> remainingFiles = new ArrayList<>();
+		Collections.sort(remainingFiles);
 		allFiles.forEach((SpdxFile file) -> {
 			if (!alreadyPrinted.contains(file)) {
-				try {
-					printFile(file, out, constants);
-				} catch (InvalidSPDXAnalysisException e) {
-					out.println("Error printing file: "+e.getMessage());
-				}
+				remainingFiles.add(file);
+			}
+		});
+		remainingFiles.forEach((SpdxFile file) -> {
+			try {
+				printFile(file, out, constants);
+			} catch (InvalidSPDXAnalysisException e) {
+				out.println("Error printing file: "+e.getMessage());
 			}
 		});
 	    try(@SuppressWarnings("unchecked")
@@ -223,8 +290,9 @@ public class CommonCode {
 	    }
 		// Extracted license infos
 		println(out, "");
-		Collection<ExtractedLicenseInfo> extractedLicenseInfos = doc.getExtractedLicenseInfos();
+		List<ExtractedLicenseInfo> extractedLicenseInfos = new ArrayList<>(doc.getExtractedLicenseInfos());
 		if (!extractedLicenseInfos.isEmpty()) {
+			Collections.sort(extractedLicenseInfos);
 			println(out, constants.getProperty("LICENSE_INFO_HEADER"));
 			for (ExtractedLicenseInfo extractedLicenseInfo:extractedLicenseInfos) {
 				printLicense(extractedLicenseInfo, out, constants);
@@ -261,7 +329,9 @@ public class CommonCode {
 					spdxSnippet.getLicenseConcluded());
 		}
 		if (spdxSnippet.getLicenseInfoFromFiles() != null) {
-			for (AnyLicenseInfo seenLicense:spdxSnippet.getLicenseInfoFromFiles()) {
+			List<AnyLicenseInfo> seenLicenses = new ArrayList<>(spdxSnippet.getLicenseInfoFromFiles());
+			Collections.sort(seenLicenses, LICENSE_COMPARATOR);
+			for (AnyLicenseInfo seenLicense:seenLicenses) {
 				println(out, constants.getProperty("PROP_SNIPPET_SEEN_LICENSE") +
 						seenLicense);
 			}
@@ -370,15 +440,17 @@ public class CommonCode {
 	private static void printElementAnnotationsRelationships(SpdxElement element,
 			PrintWriter out, Properties constants, String nameProperty,
 			String commentProperty) throws InvalidSPDXAnalysisException {
-		Collection<Annotation> annotations = element.getAnnotations();
+		List<Annotation> annotations = new ArrayList<>(element.getAnnotations());
 		if (!annotations.isEmpty()) {
+			Collections.sort(annotations);
 			println(out, constants.getProperty("ANNOTATION_HEADER"));
 			for (Annotation annotation:annotations) {
 				printAnnotation(annotation, element.getId(), out, constants);
 			}
 		}
-		Collection<Relationship> relationships = element.getRelationships();
+		List<Relationship> relationships = new ArrayList<>(element.getRelationships());
 		if (!relationships.isEmpty()) {
+		Collections.sort(relationships);
 			println(out, constants.getProperty("RELATIONSHIP_HEADER"));
 			for (Relationship relationship:relationships) {
 				printRelationship(relationship, element.getId(), out, constants);
@@ -442,8 +514,9 @@ public class CommonCode {
 		if (license.getName() != null && !license.getName().isEmpty()) {
 			println(out, constants.getProperty("PROP_LICENSE_NAME")+license.getName());
 		}
-		Collection<String> seeAlsos = license.getSeeAlso();
+		List<String> seeAlsos = new ArrayList<>(license.getSeeAlso());
 		if (!seeAlsos.isEmpty()) {
+			Collections.sort(seeAlsos);
 			StringBuilder sb = new StringBuilder();
 			boolean first = true;
 			for (String seeAlso:seeAlsos) {
@@ -473,7 +546,7 @@ public class CommonCode {
 	 * @throws InvalidSPDXAnalysisException
 	 */
 	private static void printPackage(SpdxPackage pkg, PrintWriter out,
-			Properties constants, List<SpdxFile> allFiles,
+			Properties constants, Set<SpdxFile> allFiles,
 			String documentNamespace) throws InvalidSPDXAnalysisException {
 		println(out, constants.getProperty("PACKAGE_INFO_HEADER"));
 		printElementProperties(pkg, out, constants,"PROP_PACKAGE_DECLARED_NAME",
@@ -539,8 +612,9 @@ public class CommonCode {
                 && verificationCode.get().getValue() != null
                 && !verificationCode.get().getValue().isEmpty()) {
           String code = constants.getProperty("PROP_PACKAGE_VERIFICATION_CODE") + verificationCode.get().getValue();
-          Collection<String> excludedFiles = verificationCode.get().getExcludedFileNames();
+          List<String> excludedFiles = new ArrayList<>(verificationCode.get().getExcludedFileNames());
           if (!excludedFiles.isEmpty()) {
+        	  Collections.sort(excludedFiles);
               StringBuilder excludedFilesBuilder = new StringBuilder("(");
                 
               for (String excludedFile : excludedFiles) {
@@ -557,8 +631,9 @@ public class CommonCode {
           println(out, code);
         }
 		// Checksums
-		Collection<Checksum> checksums = pkg.getChecksums();
+		List<Checksum> checksums = new ArrayList<>(pkg.getChecksums());
 		if (!checksums.isEmpty()) {
+			Collections.sort(checksums);
 			for (Checksum checksum:checksums) {
 				printChecksum(checksum, out, constants, "PROP_PACKAGE_CHECKSUM");
 			}
@@ -584,8 +659,9 @@ public class CommonCode {
 					+ pkg.getLicenseConcluded());
 		}
 		// License information from files
-		Collection<AnyLicenseInfo> licenses = pkg.getLicenseInfoFromFiles();
+		List<AnyLicenseInfo> licenses = new ArrayList<>(pkg.getLicenseInfoFromFiles());
 		if (!licenses.isEmpty()) {
+			Collections.sort(licenses, LICENSE_COMPARATOR);
 			println(out, constants.getProperty("LICENSE_FROM_FILES_INFO_HEADER"));
 			for (AnyLicenseInfo license:licenses) {
 				println(out,
@@ -639,8 +715,9 @@ public class CommonCode {
 			
 		}
 		// External Refs
-		Collection<ExternalRef> externalRefs = pkg.getExternalRefs();
+		List<ExternalRef> externalRefs = new ArrayList<>(pkg.getExternalRefs());
 		if (!externalRefs.isEmpty()) {
+			Collections.sort(externalRefs);
 			for (ExternalRef externalRef:externalRefs) {
 				printExternalRef(out, constants, externalRef, documentNamespace);
 			}
@@ -652,16 +729,13 @@ public class CommonCode {
 			// Only print if not the default
 			println(out, constants.getProperty("PROP_PACKAGE_FILES_ANALYZED") + "false");
 		}
-		Collection<SpdxFile> files = pkg.getFiles();
+		List<SpdxFile> files = new ArrayList<>(pkg.getFiles());
 		if (!files.isEmpty()) {
-                    /* Add files to a List */
-                    /* Sort the SPDX files before printout */
-                    List<SpdxFile> sortedFileList = new ArrayList<>(pkg.getFiles());
-                    Collections.sort(sortedFileList);                    
-                    println(out, "");
+            Collections.sort(files);                    
+            println(out, "");
 			println(out, constants.getProperty("FILE_INFO_HEADER"));
                         /* Print out sorted files */
-			for (SpdxFile file : sortedFileList) {
+			for (SpdxFile file : files) {
 				printFile(file, out, constants);
 				allFiles.remove(file);
 				println(out, "");
@@ -760,14 +834,16 @@ public class CommonCode {
 		printElementProperties(file, out, constants, "PROP_FILE_NAME", 
 				"PROP_FILE_COMMENT");
 		// type
-		Collection<FileType> fileTypes = file.getFileTypes();
+		List<FileType> fileTypes = new ArrayList<>(file.getFileTypes());
 		if (!fileTypes.isEmpty()) {
+			Collections.sort(fileTypes);
 			for (FileType fileType:fileTypes) {
 				println(out, constants.getProperty("PROP_FILE_TYPE") + fileType.toString());
 			}
 		}
-		Collection<Checksum> checksums = file.getChecksums();
+		List<Checksum> checksums = new ArrayList<>(file.getChecksums());
 		if (!checksums.isEmpty()) {
+			Collections.sort(checksums);
 			for (Checksum checksum:checksums) {
 				printChecksum(checksum, out, constants, "PROP_FILE_CHECKSUM");
 			}
@@ -778,8 +854,9 @@ public class CommonCode {
 					+ file.getLicenseConcluded().toString());
 		}
 		// License info in file
-		Collection<AnyLicenseInfo> anyLicenseInfosFromFiles = file.getLicenseInfoFromFiles();
+		List<AnyLicenseInfo> anyLicenseInfosFromFiles = new ArrayList<>(file.getLicenseInfoFromFiles());
 		if (!anyLicenseInfosFromFiles.isEmpty()) {
+			Collections.sort(anyLicenseInfosFromFiles, LICENSE_COMPARATOR);
 			// print(out, "\tLicense information from file: ");
 			// print(out, file.getSeenLicenses()[0].toString());
 			for (AnyLicenseInfo license:anyLicenseInfosFromFiles) {
@@ -817,14 +894,17 @@ public class CommonCode {
 			});
 		}
 		// file contributors
-		Collection<String> fileContributors = file.getFileContributors();
+		List<String> fileContributors = new ArrayList<>(file.getFileContributors());
 		if (!fileContributors.isEmpty()) {
+			Collections.sort(fileContributors);
 			for (String fileContributor:fileContributors) {
 				println(out, constants.getProperty("PROP_FILE_CONTRIBUTOR")+
 						fileContributor);
 			}
 		}
-		for (SpdxFile fileDepdency : file.getFileDependency()) {
+		List<SpdxFile> fileDependencies = new ArrayList<>(file.getFileDependency());
+		Collections.sort(fileDependencies);
+		for (SpdxFile fileDepdency : fileDependencies) {
 		    Optional<String> depName = fileDepdency.getName();
 		    String depFileName;
 		    if (depName.isPresent()) {
