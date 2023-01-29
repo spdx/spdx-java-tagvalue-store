@@ -116,7 +116,7 @@ public class BuildDocument implements TagValueBehavior {
 			return lineNumber;
 		}
 	}
-	private class RelationshipWithId {
+	private static class RelationshipWithId {
 		private String id;
 		private String relatedId;
 		private RelationshipType relationshipType;
