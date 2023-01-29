@@ -218,20 +218,20 @@ public class CommonCode {
 		printElementAnnotationsRelationships(doc, out, constants, "PROP_DOCUMENT_NAME", "PROP_SPDX_COMMENT");
 		println(out, "");
 		// Print the actual files
-		final Set<SpdxPackage> allPackages = new HashSet<>();
+		Set<SpdxPackage> allPackages = new HashSet<>();
 		try(@SuppressWarnings("unchecked")
             Stream<SpdxPackage> allPackagesStream = (Stream<SpdxPackage>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
                 doc.getCopyManager(), SpdxPackage.class)) {
 		    allPackagesStream.forEach((SpdxPackage pkg) -> allPackages.add(pkg));
 		}
-		final Set<SpdxFile> allFiles = new HashSet<>();
+		Set<SpdxFile> allFiles = new HashSet<>();
 		try(@SuppressWarnings("unchecked")
 		    Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
 				doc.getCopyManager(), SpdxFile.class)) {
 		    allFilesStream.forEach((SpdxFile file) -> allFiles.add(file));
 		}
 		// first print out any described files or snippets
-		final Set<SpdxElement> alreadyPrinted = new HashSet<>();
+		Set<SpdxElement> alreadyPrinted = new HashSet<>();
 		List<SpdxElement> items = new ArrayList<>(doc.getDocumentDescribes());
 		Collections.sort(items, ELEMENT_COMPARATOR);
 		for (SpdxElement item:items) {
@@ -415,13 +415,6 @@ public class CommonCode {
 					id + " " + uri + " SHA1: " + sha1);	
 	}
 
-	/**
-	 * @param doc
-	 * @param out
-	 * @param constants
-	 * @param string
-	 * @throws InvalidSPDXAnalysisException 
-	 */
 	private static void printElementProperties(SpdxElement element,
 			PrintWriter out, Properties constants, String nameProperty,
 			String commentProperty) throws InvalidSPDXAnalysisException {
@@ -461,12 +454,7 @@ public class CommonCode {
 			}
 		}
 	}
-	/**
-	 * @param relationship
-	 * @param out
-	 * @param constants
-	 * @throws InvalidSPDXAnalysisException 
-	 */
+
 	private static void printRelationship(Relationship relationship,
 			String elementId, PrintWriter out, Properties constants) throws InvalidSPDXAnalysisException {
 		String relatedElementId = "[MISSING]";
@@ -545,10 +533,7 @@ public class CommonCode {
 		println(out, "");
 	}
 
-	/**
-	 * @param spdxPackage
-	 * @throws InvalidSPDXAnalysisException
-	 */
+
 	private static void printPackage(SpdxPackage pkg, PrintWriter out,
 			Properties constants, Set<SpdxFile> allFiles,
 			String documentNamespace) throws InvalidSPDXAnalysisException {
