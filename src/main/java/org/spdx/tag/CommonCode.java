@@ -53,6 +53,7 @@ import org.spdx.library.model.Checksum;
 import org.spdx.library.model.ExternalDocumentRef;
 import org.spdx.library.model.ExternalRef;
 import org.spdx.library.model.Relationship;
+import org.spdx.library.model.SpdxCreatorInformation;
 import org.spdx.library.model.SpdxDocument;
 import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxFile;
@@ -180,36 +181,39 @@ public class CommonCode {
 			}
 		}
 		// Creators
-		List<String> creators = new ArrayList<>(doc.getCreationInfo().getCreators());
-		if (!creators.isEmpty()) {
-			Collections.sort(creators);
-			println(out, constants.getProperty("CREATION_INFO_HEADER"));
-			for (String creator:creators) {
-				println(out, constants.getProperty("PROP_CREATION_CREATOR")
-						+ creator);
+		SpdxCreatorInformation creationInfo = doc.getCreationInfo();
+		if (creationInfo != null) {
+			List<String> creators = new ArrayList<>(creationInfo.getCreators());
+			if (!creators.isEmpty()) {
+				Collections.sort(creators);
+				println(out, constants.getProperty("CREATION_INFO_HEADER"));
+				for (String creator:creators) {
+					println(out, constants.getProperty("PROP_CREATION_CREATOR")
+							+ creator);
+				}
 			}
-		}
-		// Creation Date
-		if (doc.getCreationInfo().getCreated() != null
-				&& !doc.getCreationInfo().getCreated().isEmpty()) {
-			println(out, constants.getProperty("PROP_CREATION_CREATED")
-					+ doc.getCreationInfo().getCreated());
-		}
-		// Creator Comment
-		Optional<String> creatorComment = doc.getCreationInfo().getComment();
-		if (creatorComment.isPresent()
-				&& !creatorComment.get().isEmpty()) {
-			println(out, constants.getProperty("PROP_CREATION_COMMENT")
-					+ constants.getProperty("PROP_BEGIN_TEXT") 
-					+ creatorComment.get()
-					+ constants.getProperty("PROP_END_TEXT"));
-		}
-		// License list version
-		Optional<String> licenseListVersion = doc.getCreationInfo().getLicenseListVersion();
-		if (licenseListVersion.isPresent() &&
-				!licenseListVersion.get().isEmpty()) {
-			println(out, constants.getProperty("PROP_LICENSE_LIST_VERSION") + 
-			        licenseListVersion.get());
+			// Creation Date
+			if (creationInfo.getCreated() != null
+					&& !creationInfo.getCreated().isEmpty()) {
+				println(out, constants.getProperty("PROP_CREATION_CREATED")
+						+ creationInfo.getCreated());
+			}
+			// Creator Comment
+			Optional<String> creatorComment = creationInfo.getComment();
+			if (creatorComment.isPresent()
+					&& !creatorComment.get().isEmpty()) {
+				println(out, constants.getProperty("PROP_CREATION_COMMENT")
+						+ constants.getProperty("PROP_BEGIN_TEXT") 
+						+ creatorComment.get()
+						+ constants.getProperty("PROP_END_TEXT"));
+			}
+			// License list version
+			Optional<String> licenseListVersion = creationInfo.getLicenseListVersion();
+			if (licenseListVersion.isPresent() &&
+					!licenseListVersion.get().isEmpty()) {
+				println(out, constants.getProperty("PROP_LICENSE_LIST_VERSION") + 
+				        licenseListVersion.get());
+			}
 		}
 		printElementAnnotationsRelationships(doc, out, constants, "PROP_DOCUMENT_NAME", "PROP_SPDX_COMMENT");
 		println(out, "");
