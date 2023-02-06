@@ -320,10 +320,13 @@ public class TestBuildDocument extends TestCase {
 	static final String LICENSE_REF1_TAGS = LICENSE_REF1_LICENSEID_TAG + "\n" + LICENSE_REF1_EXTRACTED_TEXT_TAG;
 
 	// License Ref 2
-		static final String LICENSE_REF2_LICENSEID_TAG = "LicenseID: " + LICENSE_REF2;
-		static final String LICENSE_REF2_EXTRACTED_TEXT = "/*This package includes the GRDDL parser developed by Hewlett Pa";
-		static final String LICENSE_REF2_EXTRACTED_TEXT_TAG = "ExtractedText: <text>" + LICENSE_REF2_EXTRACTED_TEXT + "</text>";
-		static final String LICENSE_REF2_TAGS = LICENSE_REF2_LICENSEID_TAG + "\n" + LICENSE_REF2_EXTRACTED_TEXT_TAG;
+	static final String LICENSE_REF2_LICENSEID_TAG = "LicenseID: " + LICENSE_REF2;
+	static final String LICENSE_REF2_EXTRACTED_TEXT = "/*This package includes the GRDDL parser developed by Hewlett Pa";
+	static final String LICENSE_REF2_EXTRACTED_TEXT_TAG = "ExtractedText: <text>" + LICENSE_REF2_EXTRACTED_TEXT + "</text>";
+	static final String LICENSE_REF2_TAGS = LICENSE_REF2_LICENSEID_TAG + "\n" + LICENSE_REF2_EXTRACTED_TEXT_TAG;
+	
+	// License reference with no text
+	static final String LICENSE_REF_NO_TEXT_TAGS = "LicenseID: " + LICENSE_REF2 + "\nLicenseName: Unlicense\n";
 
 	String SIMPLE_TAGDOCUMENT = DOC_LEVEL_TAGS + "\n" + EXTERNAL_DOC_REF_TAGS + "\n" +
 			CREATOR_TAGS + "\n" + DOC_ANNOTATION_TAGS + "\n" + DOC_RELATIONSHIP_TAGS + "\n" +
@@ -339,6 +342,25 @@ public class TestBuildDocument extends TestCase {
 			CREATOR_TAGS + "\n" + DOC_ANNOTATION_TAGS + "\n" + DOC_RELATIONSHIP_TAGS + "\n" +
 			PACKAGE_TAGS_NO_LICENSE + "\n" + LICENSE_REF1_TAGS + "\n" +
 			LICENSE_REF2_TAGS;
+	
+	String MISSING_TEXT_LICENSE_REF = "LicenseRef-Unlicense";
+	
+	String TAG_DOCUMENT_NO_EXTRACTED_TEXT = "SPDXVersion: SPDX-2.3\n" +
+			"DataLicense: CC0-1.0\n" +
+			"SPDXID: SPDXRef-DOCUMENT\n" +
+			"DocumentName: SAG-PM generated SBOM\n" +
+			"DocumentNamespace: "+DOC_NAMESPACE+"\n" +
+			"Creator: Organization: dns:reliableenergyanalytics.com\n" +
+			"Creator: Tool: SAG-PM Version: 1.2\n" +
+			"Created: 2022-11-26T18:45:28Z\n" +
+			"PackageName: apache-tomcat-9.0.69.zip\n" +
+			"PackageVersion: 9.0.69\n" +
+			"SPDXID: SPDXRef-Package-fc4a1bf0-78a0-43ca-b4a9-78adfb42138c\n" +
+			"PackageSupplier: Organization: Apache Foundation\n" +
+			"PackageDownloadLocation: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.69/bin/apache-tomcat-9.0.69.zip/\n" +
+			"FilesAnalyzed: false\n" +
+			"LicenseID: "+MISSING_TEXT_LICENSE_REF+"\n"
+			+ "LicenseName: Unlicense\n";
 
 	
 	public void testBuildSimpleDocument() throws Exception {
@@ -351,6 +373,21 @@ public class TestBuildDocument extends TestCase {
 		parser.data();
 		assertEquals(0, warnings.size());
 		assertEquals(0, new SpdxDocument(modelStore, DOC_NAMESPACE, null, false).verify().size());
+	}
+	
+	public void testNoExtractedText() throws Exception {
+		InputStream bais = new ByteArrayInputStream(TAG_DOCUMENT_NO_EXTRACTED_TEXT.getBytes());
+		HandBuiltParser parser = new HandBuiltParser(new NoCommentInputStream(bais));
+		List<String> warnings = new ArrayList<>();
+		Properties constants = CommonCode.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
+		IModelStore modelStore = new InMemSpdxStore();
+		parser.setBehavior(new BuildDocument(modelStore, constants, warnings));
+		parser.data();
+		assertEquals(1, warnings.size());
+		assertTrue(warnings.get(0).contains(MISSING_TEXT_LICENSE_REF));
+		List<String> verify = new SpdxDocument(modelStore, DOC_NAMESPACE, null, false).verify();
+		assertEquals(1, verify.size());
+		assertTrue(verify.get(0).contains(MISSING_TEXT_LICENSE_REF));
 	}
 	
 	public void testPackagefiles() throws Exception {
