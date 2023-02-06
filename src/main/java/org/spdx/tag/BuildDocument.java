@@ -724,7 +724,6 @@ public class BuildDocument implements TagValueBehavior {
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, false);
 			} else {
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, true);
-				lastExtractedLicense.setExtractedText("WARNING: TEXT IS REQUIRED");  //change text later
 				lastExtractedLicenseLineNumber = lineNumber;
 			}
 			analysis.addExtractedLicenseInfos(lastExtractedLicense);
