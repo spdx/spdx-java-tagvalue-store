@@ -717,6 +717,14 @@ public class BuildDocument implements TagValueBehavior {
 			lastReviewer.setComment(value);
 		} else if (tag.equals(constants.getProperty("PROP_LICENSE_ID"))) {
 			checkAnalysisNull();
+			if (value == null || !value.startsWith(SpdxConstants.NON_STD_LICENSE_ID_PRENUM)) {
+				if (LicenseInfoFactory.isSpdxListedLicenseId(value) || LicenseInfoFactory.isSpdxListedLicenseId(value)) {
+					throw new InvalidSpdxTagFileException("Attempting to redefine a listed license or listed exception with ID "+value);
+				} else {
+					this.warningMessages.add("Invalid SPDX Listed License ID - must start with " +
+							SpdxConstants.NON_STD_LICENSE_ID_PRENUM + ":" + value);
+				}
+			}
 			if (inExtractedLicenseDefinition) {
 				verifyElement(lastExtractedLicense.verify(), "Extracted License", lastExtractedLicenseLineNumber, false);
 			}
