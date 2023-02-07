@@ -718,7 +718,7 @@ public class BuildDocument implements TagValueBehavior {
 		} else if (tag.equals(constants.getProperty("PROP_LICENSE_ID"))) {
 			checkAnalysisNull();
 			if (value == null || !value.startsWith(SpdxConstants.NON_STD_LICENSE_ID_PRENUM)) {
-				if (LicenseInfoFactory.isSpdxListedLicenseId(value) || LicenseInfoFactory.isSpdxListedLicenseId(value)) {
+				if (LicenseInfoFactory.isSpdxListedLicenseId(value) || LicenseInfoFactory.isSpdxListedExceptionId(value)) {
 					throw new InvalidSpdxTagFileException("Attempting to redefine a listed license or listed exception with ID "+value);
 				} else {
 					this.warningMessages.add("Invalid SPDX Listed License ID - must start with " +
