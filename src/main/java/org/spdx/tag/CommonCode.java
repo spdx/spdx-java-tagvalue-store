@@ -217,61 +217,48 @@ public class CommonCode {
 		}
 		printElementAnnotationsRelationships(doc, out, constants, "PROP_DOCUMENT_NAME", "PROP_SPDX_COMMENT");
 		println(out, "");
-		// Print the actual files
+		// Print the elements - need to print non-associated snippets, files before packages
+		Set<SpdxFile> filesRemaining = new HashSet<>(); // files remaining to be printed
+		try(@SuppressWarnings("unchecked")
+		    Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
+				doc.getCopyManager(), SpdxFile.class)) {
+		    allFilesStream.forEach((SpdxFile file) -> filesRemaining.add(file));
+		}
+		Set<SpdxSnippet> snippetsRemaining = new HashSet<>();
+		try(@SuppressWarnings("unchecked")
+	    Stream<SpdxSnippet> allSnippetssStream = (Stream<SpdxSnippet>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
+			doc.getCopyManager(), SpdxSnippet.class)) {
+			allSnippetssStream.forEach((SpdxSnippet snippet) -> snippetsRemaining.add(snippet));
+		}
 		Set<SpdxPackage> allPackages = new HashSet<>();
 		try(@SuppressWarnings("unchecked")
             Stream<SpdxPackage> allPackagesStream = (Stream<SpdxPackage>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
                 doc.getCopyManager(), SpdxPackage.class)) {
-		    allPackagesStream.forEach((SpdxPackage pkg) -> allPackages.add(pkg));
-		}
-		Set<SpdxFile> allFiles = new HashSet<>();
-		try(@SuppressWarnings("unchecked")
-		    Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-				doc.getCopyManager(), SpdxFile.class)) {
-		    allFilesStream.forEach((SpdxFile file) -> allFiles.add(file));
+		    allPackagesStream.forEach((SpdxPackage pkg) -> {
+		    		allPackages.add(pkg);
+		    		// we need to remove any files that will be included in the packages
+		    		try {
+						pkg.getFiles().forEach((SpdxFile file) -> filesRemaining.remove(file));
+					} catch (InvalidSPDXAnalysisException e) {
+						throw new RuntimeException("Error getting files for a package", e);
+					}
+		    });
 		}
 		// first print out any described files or snippets
-		Set<SpdxElement> alreadyPrinted = new HashSet<>();
-		List<SpdxElement> items = new ArrayList<>(doc.getDocumentDescribes());
-		Collections.sort(items, ELEMENT_COMPARATOR);
-		for (SpdxElement item:items) {
+		List<SpdxElement> describedItems = new ArrayList<>(doc.getDocumentDescribes());
+		Collections.sort(describedItems, ELEMENT_COMPARATOR);
+		for (SpdxElement item:describedItems) {
 			if (item instanceof SpdxFile) {
 				printFile((SpdxFile)item, out, constants);
-				alreadyPrinted.add(item);
-			} else if (items instanceof SpdxSnippet) {
-				printSnippet((SpdxSnippet)items, out, constants);
-				alreadyPrinted.add(item);
+				filesRemaining.remove((SpdxFile)item);
+			} else if (describedItems instanceof SpdxSnippet) {
+				printSnippet((SpdxSnippet)item, out, constants);
+				snippetsRemaining.remove((SpdxSnippet)item);
 			}
 		}
-		// print any described packages
-		for (SpdxElement item:items) {
-			if (item instanceof SpdxPackage) {
-				printPackage((SpdxPackage)item, out, constants, allFiles, doc.getDocumentUri());
-				alreadyPrinted.add(item);
-			}
-		}
-		// print remaining packages
-		ArrayList<SpdxPackage> remainingPackages = new ArrayList<>();
-		allPackages.forEach((SpdxPackage pkg) -> {
-			if (!alreadyPrinted.contains(pkg)) {
-				remainingPackages.add(pkg);
-			}
-		});
-		Collections.sort(remainingPackages);
-		remainingPackages.forEach((SpdxPackage pkg) -> {
-			try {
-				printPackage(pkg, out, constants, allFiles, doc.getDocumentUri());
-			} catch (InvalidSPDXAnalysisException e) {
-				out.println("Error printing package: "+e.getMessage());
-			}
-		});
-		ArrayList<SpdxFile> remainingFiles = new ArrayList<>();
+		// print any files which are not included package and not described
+		ArrayList<SpdxFile> remainingFiles = new ArrayList<>(filesRemaining);
 		Collections.sort(remainingFiles);
-		allFiles.forEach((SpdxFile file) -> {
-			if (!alreadyPrinted.contains(file)) {
-				remainingFiles.add(file);
-			}
-		});
 		remainingFiles.forEach((SpdxFile file) -> {
 			try {
 				printFile(file, out, constants);
@@ -279,19 +266,38 @@ public class CommonCode {
 				out.println("Error printing file: "+e.getMessage());
 			}
 		});
-	    try(@SuppressWarnings("unchecked")
-	        Stream<SpdxSnippet> allSnippets = (Stream<SpdxSnippet>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-	                doc.getCopyManager(), SpdxSnippet.class)) {
-	        allSnippets.sorted().forEach((SpdxSnippet snippet) -> {
-	            if (!alreadyPrinted.contains(snippet)) {
-	                try {
-	                    printSnippet(snippet, out, constants);
-	                } catch (InvalidSPDXAnalysisException e) {
-	                    out.println("Error printing package: "+e.getMessage());
-	                }
-	            }
-	        });
-	    }
+		// Print any snippets not described
+		ArrayList<SpdxSnippet> remainingSnippets = new ArrayList<>(snippetsRemaining);
+		Collections.sort(remainingSnippets);
+		remainingSnippets.forEach((SpdxSnippet snippet) -> {
+            try {
+                printSnippet(snippet, out, constants);
+            } catch (InvalidSPDXAnalysisException e) {
+                out.println("Error printing package: "+e.getMessage());
+            }
+        });
+		// print any described packages
+		for (SpdxElement item:describedItems) {
+			if (item instanceof SpdxPackage) {
+				printPackage((SpdxPackage)item, out, constants, doc.getDocumentUri());
+			}
+		}
+		// print remaining packages
+		ArrayList<SpdxPackage> remainingPackages = new ArrayList<>();
+		allPackages.forEach((SpdxPackage pkg) -> {
+			if (!describedItems.contains(pkg)) {
+				remainingPackages.add(pkg);
+			}
+		});
+		Collections.sort(remainingPackages);
+		remainingPackages.forEach((SpdxPackage pkg) -> {
+			try {
+				printPackage(pkg, out, constants, doc.getDocumentUri());
+			} catch (InvalidSPDXAnalysisException e) {
+				out.println("Error printing package: "+e.getMessage());
+			}
+		});
+		
 		// Extracted license infos
 		println(out, "");
 		List<ExtractedLicenseInfo> extractedLicenseInfos = new ArrayList<>(doc.getExtractedLicenseInfos());
@@ -535,8 +541,7 @@ public class CommonCode {
 
 
 	private static void printPackage(SpdxPackage pkg, PrintWriter out,
-			Properties constants, Set<SpdxFile> allFiles,
-			String documentNamespace) throws InvalidSPDXAnalysisException {
+			Properties constants, String documentNamespace) throws InvalidSPDXAnalysisException {
 		println(out, constants.getProperty("PACKAGE_INFO_HEADER"));
 		printElementProperties(pkg, out, constants,"PROP_PACKAGE_DECLARED_NAME",
 				"PROP_PACKAGE_COMMENT");
@@ -726,7 +731,6 @@ public class CommonCode {
                         /* Print out sorted files */
 			for (SpdxFile file : files) {
 				printFile(file, out, constants);
-				allFiles.remove(file);
 				println(out, "");
 			}
 		} else {
