@@ -734,7 +734,9 @@ public class BuildDocument implements TagValueBehavior {
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, true);
 				lastExtractedLicenseLineNumber = lineNumber;
 			}
-			analysis.addExtractedLicenseInfos(lastExtractedLicense);
+			if (!analysis.addExtractedLicenseInfos(lastExtractedLicense)) {
+				this.warningMessages.add("Duplicate extracted license ID: "+value);
+			}
 			this.inExtractedLicenseDefinition = true;
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_DECLARED_NAME"))) {
 			checkAnalysisNull();
