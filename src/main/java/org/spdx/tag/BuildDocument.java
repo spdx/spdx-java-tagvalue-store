@@ -729,6 +729,7 @@ public class BuildDocument implements TagValueBehavior {
 				verifyElement(lastExtractedLicense.verify(), "Extracted License", lastExtractedLicenseLineNumber, false);
 			}
 			if (modelStore.exists(documentNamespace, value)) {
+				this.warningMessages.add("Duplicate extracted license ID: "+value);
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, false);
 			} else {
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, true);
