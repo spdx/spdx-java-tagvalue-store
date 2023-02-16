@@ -729,13 +729,14 @@ public class BuildDocument implements TagValueBehavior {
 				verifyElement(lastExtractedLicense.verify(), "Extracted License", lastExtractedLicenseLineNumber, false);
 			}
 			if (modelStore.exists(documentNamespace, value)) {
-				this.warningMessages.add("Duplicate extracted license ID: "+value);
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, false);
 			} else {
 				lastExtractedLicense = new ExtractedLicenseInfo(modelStore, documentNamespace, value, copyManager, true);
 				lastExtractedLicenseLineNumber = lineNumber;
 			}
-			analysis.addExtractedLicenseInfos(lastExtractedLicense);
+			if (!analysis.addExtractedLicenseInfos(lastExtractedLicense)) {
+				this.warningMessages.add("Duplicate extracted license ID: "+value);
+			}
 			this.inExtractedLicenseDefinition = true;
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_DECLARED_NAME"))) {
 			checkAnalysisNull();
