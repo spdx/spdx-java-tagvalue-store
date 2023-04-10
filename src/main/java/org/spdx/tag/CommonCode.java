@@ -465,6 +465,7 @@ public class CommonCode {
 			String elementId, PrintWriter out, Properties constants) throws InvalidSPDXAnalysisException {
 		String relatedElementId = "[MISSING]";
 		Optional<SpdxElement> relatedElement = relationship.getRelatedSpdxElement();
+		Optional<String> comment = relationship.getComment();
 		if (relatedElement.isPresent()) {
 			relatedElementId = relatedElement.get().getId();
 		}
@@ -472,6 +473,11 @@ public class CommonCode {
 				elementId+" " +
 				relationship.getRelationshipType().toString()+
 				" " + relatedElementId);
+		if (comment.isPresent()) {
+			out.println(constants.getProperty("PROP_RELATIONSHIP_COMMENT") + " " +
+					constants.getProperty("PROP_BEGIN_TEXT") + comment.get() +
+					constants.getProperty("PROP_END_TEXT"));
+		}
 	}
 
 	/**
