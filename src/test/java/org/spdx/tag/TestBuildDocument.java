@@ -139,7 +139,7 @@ public class TestBuildDocument extends TestCase {
 	static final String PACKAGE_VERSION = "2.11.1";
 	static final String PACKAGE_VERSION_TAG = "PackageVersion: " + PACKAGE_VERSION;
 	static final String PACKAGE_FILENAME = "glibc-2.11.1.tar.gz";
-	static final String PACKAGE_FILENAME_TAG = "PackageFileName: ";
+	static final String PACKAGE_FILENAME_TAG = "PackageFileName: " + PACKAGE_FILENAME;
 	static final String PACKAGE_SUPPLIER = "Person: Jane Doe (jane.doe@example.com)";
 	static final String PACKAGE_SUPPLIER_TAG = "PackageSupplier: " + PACKAGE_SUPPLIER;
 	static final String PACKAGE_ORIGINATOR = "Organization: ExampleCodeInspect (contact@example.com)";

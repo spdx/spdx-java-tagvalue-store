@@ -1420,6 +1420,7 @@ public class BuildDocument implements TagValueBehavior {
 			addToRelationships(lastRelationship);
 			lastRelationship = null;
 		}
+		Map<Integer, Relationship> lineNumberToRelationship = new HashMap<>();
 		for (Entry<String, Map<String, List<RelationshipWithId>>> entry : this.relationships.entrySet()) {
 			String id = entry.getKey();
 			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, id,  copyManager);
@@ -1471,10 +1472,15 @@ public class BuildDocument implements TagValueBehavior {
 					}
 					Relationship newRelationship = element.createRelationship(relatedElement, relwId.getRelationshipType(), 
 							relwId.getComment());
-					verifyElement(newRelationship.verify(), "Relationship", relwId.getLineNumber());
+					lineNumberToRelationship.put(relwId.getLineNumber(), newRelationship);
 					element.addRelationship(newRelationship);
 				}
 			}
+		}
+		// We need to verify after all relationships are added since missing relationships may cause a
+		// verification error
+		for (Entry<Integer, Relationship> entry:lineNumberToRelationship.entrySet()) {
+			verifyElement(entry.getValue().verify(), "Relationship", entry.getKey());
 		}
 	}
 
