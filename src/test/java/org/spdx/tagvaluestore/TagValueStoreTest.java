@@ -124,9 +124,8 @@ public class TagValueStoreTest extends TestCase {
 	public void testCaseWarning() throws InvalidSPDXAnalysisException, IOException {
 		File tagValueFile = new File(CASE_FILE_PATH);
 		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
-		String docUri = null;
 		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
-			docUri = tvs.deSerialize(tagValueInput, false);
+			tvs.deSerialize(tagValueInput, false);
 		}
 		assertEquals(1, tvs.getWarnings().size());
 	}
