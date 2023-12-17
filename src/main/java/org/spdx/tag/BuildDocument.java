@@ -1079,10 +1079,16 @@ public class BuildDocument implements TagValueBehavior {
 			}
 			pkg.setPrimaryPurpose(purpose);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_FILES_ANALYZED"))) {
-			if ("TRUE".equals(value.toUpperCase())) {
+			if ("true".equals(value.toLowerCase())) {
 				pkg.setFilesAnalyzed(true);
-			} else if ("FALSE".equals(value.toUpperCase())) {
+				if (!"true".equals(value)) {
+					this.warningMessages.add("Warning: Invalid case for boolean value.  Expected 'true', found '"+value+"'");
+				}
+			} else if ("false".equals(value.toLowerCase())) {
 				pkg.setFilesAnalyzed(false);
+				if (!"false".equals(value)) {
+					this.warningMessages.add("Warning: Invalid case for boolean value.  Expected 'false', found '"+value+"'");
+				}
 			} else {
 				throw(new InvalidSpdxTagFileException("Invalid value for files analyzed.  Must be 'true' or 'false'.  Found value: "+value+" at line number "+lineNumber));
 			}

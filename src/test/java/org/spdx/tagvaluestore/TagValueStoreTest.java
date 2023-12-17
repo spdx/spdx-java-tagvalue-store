@@ -46,6 +46,7 @@ public class TagValueStoreTest extends TestCase {
 	
 	static final String TAG_VALUE_FILE_PATH = "testResources" + File.separator + "SPDXTagExample-v2.3.spdx";
 	private static final String ARTIFACT_OF_FILE_PATH = "testResources" + File.separator + "artifactof.spdx";
+	private static final String CASE_FILE_PATH = "testResources" + File.separator + "case.spdx";
 
 
 	/* (non-Javadoc)
@@ -118,6 +119,16 @@ public class TagValueStoreTest extends TestCase {
 		assertEquals(RelationshipType.GENERATED_FROM, relationships[0].getRelationshipType());
 		SpdxPackage relatedPackage = (SpdxPackage)(relationships[0].getRelatedSpdxElement().get());
 		assertEquals("AcmeTest", relatedPackage.getName().get());
+	}
+	
+	public void testCaseWarning() throws InvalidSPDXAnalysisException, IOException {
+		File tagValueFile = new File(CASE_FILE_PATH);
+		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
+		String docUri = null;
+		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
+			docUri = tvs.deSerialize(tagValueInput, false);
+		}
+		assertEquals(1, tvs.getWarnings().size());
 	}
 
 }
