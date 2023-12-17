@@ -1,4 +1,4 @@
-# Release Checklist for the SPDX RDF Store
+# Release Checklist for the SPDX TagValue Store
 
 - [ ] Check for any warnings from the compiler and findbugs
 - [ ] Run unit tests for all packages that depend on the library
