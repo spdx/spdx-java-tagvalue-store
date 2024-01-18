@@ -722,13 +722,13 @@ public class CommonCode {
 				printExternalRef(out, constants, externalRef, documentNamespace);
 			}
 		}
-		printElementAnnotationsRelationships(pkg, out, constants,"PROP_PACKAGE_DECLARED_NAME",
-				"PROP_PACKAGE_COMMENT");
 		// Files
 		if (!pkg.isFilesAnalyzed()) {
 			// Only print if not the default
 			println(out, constants.getProperty("PROP_PACKAGE_FILES_ANALYZED") + "false");
 		}
+		printElementAnnotationsRelationships(pkg, out, constants,"PROP_PACKAGE_DECLARED_NAME",
+				"PROP_PACKAGE_COMMENT");
 		List<SpdxFile> files = new ArrayList<>(pkg.getFiles());
 		if (!files.isEmpty()) {
             Collections.sort(files);                    
