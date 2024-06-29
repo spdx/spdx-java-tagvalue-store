@@ -25,26 +25,31 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.ExternalRef;
-import org.spdx.library.model.ModelObject;
-import org.spdx.library.model.ReferenceType;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.enumerations.FileType;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.enumerations.ReferenceCategory;
-import org.spdx.library.model.enumerations.RelationshipType;
-import org.spdx.library.model.license.LicenseInfoFactory;
-import org.spdx.library.model.license.SpdxNoAssertionLicense;
+import org.spdx.core.IModelCopyManager;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
+import org.spdx.library.LicenseInfoFactory;
+import org.spdx.library.ModelCopyManager;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.ExternalRef;
+import org.spdx.library.model.v2.ModelObjectV2;
+import org.spdx.library.model.v2.ReferenceType;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxSnippet;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.enumerations.FileType;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.enumerations.ReferenceCategory;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
+import org.spdx.library.model.v3.SpdxModelInfoV3_0;
 import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -361,6 +366,23 @@ public class TestBuildDocument extends TestCase {
 			"LicenseID: "+MISSING_TEXT_LICENSE_REF+"\n"
 			+ "LicenseName: Unlicense\n";
 
+	IModelCopyManager copyManager;
+	/* (non-Javadoc)
+	 * @see junit.framework.TestCase#setUp()
+	 */
+	protected void setUp() throws Exception {
+		super.setUp();
+		copyManager = new ModelCopyManager();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+	}
+
+	/* (non-Javadoc)
+	 * @see junit.framework.TestCase#tearDown()
+	 */
+	protected void tearDown() throws Exception {
+		super.tearDown();
+	}
 	
 	public void testBuildSimpleDocument() throws Exception {
 		InputStream bais = new ByteArrayInputStream(SIMPLE_TAGDOCUMENT.getBytes());
@@ -411,8 +433,8 @@ public class TestBuildDocument extends TestCase {
 			}
 		}
 		assertFalse(modelStore.getValue(
-				DOC_NAMESPACE, PACKAGE_SPDXID, 
-				SpdxConstants.PROP_PACKAGE_FILE).isPresent());
+				DOC_NAMESPACE + "#" + PACKAGE_SPDXID, 
+				SpdxConstantsCompatV2.PROP_PACKAGE_FILE).isPresent());
 	}
 	
 	public void testVersion2dot3noLicense() throws Exception {
@@ -427,11 +449,11 @@ public class TestBuildDocument extends TestCase {
 		assertEquals(0, new SpdxDocument(modelStore, DOC_NAMESPACE, null, false).verify().size());
 		SpdxPackage pkg = new SpdxPackage(modelStore, DOC_NAMESPACE, PACKAGE_SPDXID, null, false);
 		// no license concluded
-		assertEquals(new SpdxNoAssertionLicense(), pkg.getLicenseConcluded());
+		assertEquals(new SpdxNoAssertionLicense(modelStore, DOC_NAMESPACE), pkg.getLicenseConcluded());
 		// no copyright
 		assertEquals("", pkg.getCopyrightText());
 		// no license declared
-		assertEquals(new SpdxNoAssertionLicense(), pkg.getLicenseDeclared());
+		assertEquals(new SpdxNoAssertionLicense(modelStore, DOC_NAMESPACE), pkg.getLicenseDeclared());
 	}
 	
 	public void testVersion2dot3() throws Exception {
@@ -488,13 +510,13 @@ public class TestBuildDocument extends TestCase {
 		assertTrue(collectionsEquivalent(expected, refs));
 	}
 	 
-	 boolean collectionsEquivalent(Collection<? extends ModelObject> a, Collection<? extends ModelObject> b) throws InvalidSPDXAnalysisException {
+	 boolean collectionsEquivalent(Collection<? extends ModelObjectV2> a, Collection<? extends ModelObjectV2> b) throws InvalidSPDXAnalysisException {
 		if (a.size() != b.size()) {
 			return false;
 		}
-		for (ModelObject aItem: a) {
+		for (ModelObjectV2 aItem: a) {
 			boolean found = false;
-			for (ModelObject bItem:b) {
+			for (ModelObjectV2 bItem:b) {
 				if (aItem.equivalent(bItem)) {
 					found = true;
 					break;
@@ -537,7 +559,9 @@ public class TestBuildDocument extends TestCase {
 		parser.data();
 		List<SpdxFile> files = new ArrayList<>();
 		try(@SuppressWarnings("unchecked")
-        Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getElements(modelStore, DOC_NAMESPACE, null, SpdxFile.class)) {
+		
+        Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getSpdxObjects(modelStore, null, 
+        		SpdxConstantsCompatV2.CLASS_SPDX_FILE, DOC_NAMESPACE, null)) {
 		    fileStream.forEach(element -> {
 		        files.add((SpdxFile)element);
 		    });
@@ -546,8 +570,8 @@ public class TestBuildDocument extends TestCase {
 		SpdxFile expected = new SpdxFile(modelStore, DOC_NAMESPACE, FILE_LIB_SPDXID, null, false);
 		expected.setName(FILE_LIB_FILENAME);
 		expected.setComment(FILE_LIB_COMMENT);
-		expected.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseString(FILE_LIB_LICENSE_CONCLUDED, modelStore, DOC_NAMESPACE, null));
-		expected.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseString(FILE_LIB_LICENSE_INFO, modelStore, DOC_NAMESPACE, null));
+		expected.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(FILE_LIB_LICENSE_CONCLUDED, modelStore, DOC_NAMESPACE, copyManager));
+		expected.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(FILE_LIB_LICENSE_INFO, modelStore, DOC_NAMESPACE, copyManager));
 		expected.setCopyrightText(FILE_LIB_COPYRIGHT);
 		expected.setLicenseComments(FILE_LIB_LICENSE_COMMENT);
 		expected.getFileTypes().add(FileType.ARCHIVE);
@@ -568,7 +592,8 @@ public class TestBuildDocument extends TestCase {
 		parser.data();
 		List<SpdxSnippet> snippets = new ArrayList<>();
 		try(@SuppressWarnings("unchecked")
-        Stream<SpdxSnippet> snippetStream = (Stream<SpdxSnippet>)SpdxModelFactory.getElements(modelStore, DOC_NAMESPACE, null, SpdxSnippet.class)) {
+        Stream<SpdxSnippet> snippetStream = (Stream<SpdxSnippet>)SpdxModelFactory.getSpdxObjects(modelStore, 
+        		null, SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, DOC_NAMESPACE, null)) {
 		    snippetStream.forEach(element -> {
 		        snippets.add((SpdxSnippet)element);
 		    });
@@ -577,8 +602,8 @@ public class TestBuildDocument extends TestCase {
 		SpdxFile snippetFromFile = new SpdxFile(modelStore, DOC_NAMESPACE, FILE_LIB_SPDXID, null, false);
 		snippetFromFile.setName(FILE_LIB_FILENAME);
 		snippetFromFile.setComment(FILE_LIB_COMMENT);
-		snippetFromFile.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseString(FILE_LIB_LICENSE_CONCLUDED, modelStore, DOC_NAMESPACE, null));
-		snippetFromFile.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseString(FILE_LIB_LICENSE_INFO, modelStore, DOC_NAMESPACE, null));
+		snippetFromFile.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(FILE_LIB_LICENSE_CONCLUDED, modelStore, DOC_NAMESPACE, copyManager));
+		snippetFromFile.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(FILE_LIB_LICENSE_INFO, modelStore, DOC_NAMESPACE, copyManager));
 		snippetFromFile.setCopyrightText(FILE_LIB_COPYRIGHT);
 		snippetFromFile.setLicenseComments(FILE_LIB_LICENSE_COMMENT);
 		snippetFromFile.getFileTypes().add(FileType.ARCHIVE);
@@ -588,8 +613,8 @@ public class TestBuildDocument extends TestCase {
 		SpdxSnippet expected = new SpdxSnippet(modelStore, DOC_NAMESPACE, SNIPPET_LIB_ID, null, false);
 		expected.setName(SNIPPET_LIB_NAME);
 		expected.setComment(SNIPPET_LIB_COMMENT);
-		expected.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseString(SNIPPET_LIB_CONCLUDED_LICENSE, modelStore, DOC_NAMESPACE, null));
-		expected.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseString(SNIPPET_LIB_LICENSE_INFO_IN_SNIPPET, modelStore, DOC_NAMESPACE, null));
+		expected.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(SNIPPET_LIB_CONCLUDED_LICENSE, modelStore, DOC_NAMESPACE, copyManager));
+		expected.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(SNIPPET_LIB_LICENSE_INFO_IN_SNIPPET, modelStore, DOC_NAMESPACE, copyManager));
 		expected.setCopyrightText(SNIPPET_LIB_COPYRIGHT);
 		expected.setLicenseComments(SNIPPET_LIB_LICENSE_COMMENT);
 		expected.setSnippetFromFile(snippetFromFile);

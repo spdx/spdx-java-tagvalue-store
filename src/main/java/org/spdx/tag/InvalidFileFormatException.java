@@ -16,7 +16,7 @@
 */
 package org.spdx.tag;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
 
 /**
  * Exceptions for invalid SPDX file format

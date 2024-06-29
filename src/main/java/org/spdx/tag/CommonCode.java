@@ -46,30 +46,32 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Annotation;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.ExternalRef;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxCreatorInformation;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxPackageVerificationCode;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.enumerations.FileType;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.ExtractedLicenseInfo;
-import org.spdx.library.model.license.SimpleLicensingInfo;
-import org.spdx.library.model.pointer.ByteOffsetPointer;
-import org.spdx.library.model.pointer.LineCharPointer;
-import org.spdx.library.model.pointer.StartEndPointer;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.Annotation;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.ExternalRef;
+import org.spdx.library.model.v2.ExternalSpdxElement;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxCreatorInformation;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxPackageVerificationCode;
+import org.spdx.library.model.v2.SpdxSnippet;
+import org.spdx.library.model.v2.enumerations.FileType;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
+import org.spdx.library.model.v2.license.SimpleLicensingInfo;
+import org.spdx.library.model.v2.pointer.ByteOffsetPointer;
+import org.spdx.library.model.v2.pointer.LineCharPointer;
+import org.spdx.library.model.v2.pointer.StartEndPointer;
 import org.spdx.library.referencetype.ListedReferenceTypes;
+import org.spdx.storage.CompatibleModelStoreWrapper;
 
 /**
  * Define Common methods used by Tag-Value and SPDXViewer to print the SPDX
@@ -220,20 +222,20 @@ public class CommonCode {
 		// Print the elements - need to print non-associated snippets, files before packages
 		Set<SpdxFile> filesRemaining = new HashSet<>(); // files remaining to be printed
 		try(@SuppressWarnings("unchecked")
-		    Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-				doc.getCopyManager(), SpdxFile.class)) {
+		Stream<SpdxFile> allFilesStream = (Stream<SpdxFile>)SpdxModelFactory.getSpdxObjects(doc.getModelStore(), doc.getCopyManager(), 
+				SpdxConstantsCompatV2.CLASS_SPDX_FILE, doc.getDocumentUri(), doc.getDocumentUri() + "#")) {
 		    allFilesStream.forEach((SpdxFile file) -> filesRemaining.add(file));
 		}
 		Set<SpdxSnippet> snippetsRemaining = new HashSet<>();
 		try(@SuppressWarnings("unchecked")
-	    Stream<SpdxSnippet> allSnippetssStream = (Stream<SpdxSnippet>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-			doc.getCopyManager(), SpdxSnippet.class)) {
+	    Stream<SpdxSnippet> allSnippetssStream = (Stream<SpdxSnippet>)SpdxModelFactory.getSpdxObjects(doc.getModelStore(), doc.getCopyManager(), 
+				SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, doc.getDocumentUri(), doc.getDocumentUri() + "#")) {
 			allSnippetssStream.forEach((SpdxSnippet snippet) -> snippetsRemaining.add(snippet));
 		}
 		Set<SpdxPackage> allPackages = new HashSet<>();
 		try(@SuppressWarnings("unchecked")
-            Stream<SpdxPackage> allPackagesStream = (Stream<SpdxPackage>) SpdxModelFactory.getElements(doc.getModelStore(), doc.getDocumentUri(),
-                doc.getCopyManager(), SpdxPackage.class)) {
+            Stream<SpdxPackage> allPackagesStream = (Stream<SpdxPackage>)SpdxModelFactory.getSpdxObjects(doc.getModelStore(), doc.getCopyManager(), 
+    				SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, doc.getDocumentUri(), doc.getDocumentUri() + "#")) {
 		    allPackagesStream.forEach((SpdxPackage pkg) -> {
 		    		allPackages.add(pkg);
 		    		// we need to remove any files that will be included in the packages
@@ -467,7 +469,13 @@ public class CommonCode {
 		Optional<SpdxElement> relatedElement = relationship.getRelatedSpdxElement();
 		Optional<String> comment = relationship.getComment();
 		if (relatedElement.isPresent()) {
-			relatedElementId = relatedElement.get().getId();
+			if (relatedElement.get() instanceof ExternalSpdxElement) {
+				relatedElementId = ExternalSpdxElement.uriToExternalSpdxElementReference(relatedElement.get().getObjectUri(), 
+						relationship.getModelStore(), relationship.getDocumentUri(), relationship.getCopyManager(),
+						CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION);
+			} else {
+				relatedElementId = relatedElement.get().getId();
+			}
 		}
 		out.println(constants.getProperty("PROP_RELATIONSHIP")+
 				elementId+" " +
@@ -749,8 +757,8 @@ public class CommonCode {
 	 * @return
 	 */
 	private static String formatCopyrightText(Properties constants, String copyrightText) {
-		boolean encloseInText = !(SpdxConstants.NONE_VALUE.equals(copyrightText) ||
-				SpdxConstants.NOASSERTION_VALUE.equals(copyrightText));
+		boolean encloseInText = !(SpdxConstantsCompatV2.NONE_VALUE.equals(copyrightText) ||
+				SpdxConstantsCompatV2.NOASSERTION_VALUE.equals(copyrightText));
 		if (encloseInText) {
 			return constants.getProperty("PROP_BEGIN_TEXT") + copyrightText + constants.getProperty("PROP_END_TEXT");
 		} else {

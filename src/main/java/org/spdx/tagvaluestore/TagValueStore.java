@@ -28,9 +28,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.model.SpdxDocument;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.ExtendedSpdxStore;
@@ -60,14 +63,18 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 	 * @see org.spdx.storage.ISerializableModelStore#serialize(java.lang.String, java.io.OutputStream)
 	 */
 	@Override
-	public void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		Properties constants = CommonCode
 				.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
-		SpdxDocument doc = new SpdxDocument(this, documentUri, null, false);
+		@SuppressWarnings("unchecked")
+		List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(this, null, 
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
 		PrintWriter writer = new PrintWriter(new OutputStreamWriter(
 				stream, StandardCharsets.UTF_8), true);
 		try {
-			CommonCode.printDoc(doc, writer, constants);
+			for (SpdxDocument doc:allDocs) {
+				CommonCode.printDoc(doc, writer, constants);
+			}
 		} finally {
 			writer.flush();
 		}
@@ -77,7 +84,7 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 	 * @see org.spdx.storage.ISerializableModelStore#deSerialize(java.io.InputStream, boolean)
 	 */
 	@Override
-	public String deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+	public void deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		warnings.clear();
 		Properties constants = CommonCode.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
 		NoCommentInputStream nci = new NoCommentInputStream(stream);
@@ -86,7 +93,7 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 			BuildDocument buildDocument = new BuildDocument(this, constants, warnings);
 			parser.setBehavior(buildDocument);
 			parser.data();
-			return buildDocument.getDocumentUri();
+			buildDocument.getDocumentUri();
 		} catch (RecognitionException e) {
 			// error in tag value file
 			throw(new InvalidSpdxTagFileException(e.getMessage()));
