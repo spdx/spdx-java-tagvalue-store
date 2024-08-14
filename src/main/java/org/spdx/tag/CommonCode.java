@@ -366,6 +366,14 @@ public class CommonCode {
 			println(out, constants.getProperty("PROP_SNIPPET_NAME") +
 			        name.get());	
 		}
+		// snippet attribution text
+		if (!spdxSnippet.getAttributionText().isEmpty()) {
+			spdxSnippet.getAttributionText().forEach(s -> {
+				println(out, constants.getProperty("PROP_SNIPPET_ATTRIBUTION_TEXT")
+						+ constants.getProperty("PROP_BEGIN_TEXT") 
+						+ s + constants.getProperty("PROP_END_TEXT"));
+			});
+		}
 		println(out, "");
 	}
 
