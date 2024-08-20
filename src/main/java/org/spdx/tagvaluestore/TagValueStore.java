@@ -27,10 +27,15 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
+import org.spdx.core.CoreModelObject;
 import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.ModelCopyManager;
 import org.spdx.library.SpdxModelFactory;
 import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.SpdxDocument;
@@ -58,25 +63,40 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 	public TagValueStore(IModelStore baseStore) {
 		super(baseStore);
 	}
+	
+	@Override
+	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+		serialize(stream, null);
+	}
 
 	/* (non-Javadoc)
 	 * @see org.spdx.storage.ISerializableModelStore#serialize(java.lang.String, java.io.OutputStream)
 	 */
 	@Override
-	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+	public void serialize(OutputStream stream, @Nullable CoreModelObject modelObject) throws InvalidSPDXAnalysisException, IOException {
 		Properties constants = CommonCode
 				.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
-		@SuppressWarnings("unchecked")
-		List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(this, null, 
-				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
-		PrintWriter writer = new PrintWriter(new OutputStreamWriter(
-				stream, StandardCharsets.UTF_8), true);
-		try {
-			for (SpdxDocument doc:allDocs) {
-				CommonCode.printDoc(doc, writer, constants);
+		if (Objects.nonNull(modelObject)) {
+			if (modelObject instanceof SpdxDocument) {
+				try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+				stream, StandardCharsets.UTF_8), true)) {
+					CommonCode.printDoc((SpdxDocument)modelObject, writer, constants);
+					writer.flush();
+				}
+			} else {
+				throw new InvalidSPDXAnalysisException("Can not serialize "+modelObject.getClass().toString()+".  Only SpdxDocument is supported");
 			}
-		} finally {
-			writer.flush();
+		} else {
+			@SuppressWarnings("unchecked")
+			List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(this, null, 
+					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
+			try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+					stream, StandardCharsets.UTF_8), true)) {
+				for (SpdxDocument doc:allDocs) {
+					CommonCode.printDoc(doc, writer, constants);
+				}
+				writer.flush();
+			}
 		}
 	}
 
@@ -84,7 +104,7 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 	 * @see org.spdx.storage.ISerializableModelStore#deSerialize(java.io.InputStream, boolean)
 	 */
 	@Override
-	public void deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+	public SpdxDocument deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		warnings.clear();
 		Properties constants = CommonCode.getTextFromProperties("org/spdx/tag/SpdxTagValueConstants.properties");
 		NoCommentInputStream nci = new NoCommentInputStream(stream);
@@ -93,7 +113,10 @@ public class TagValueStore extends ExtendedSpdxStore implements ISerializableMod
 			BuildDocument buildDocument = new BuildDocument(this, constants, warnings);
 			parser.setBehavior(buildDocument);
 			parser.data();
-			buildDocument.getDocumentUri();
+			String documentUri = buildDocument.getDocumentUri();
+			return (SpdxDocument)SpdxModelFactory.inflateModelObject(this, documentUri + "#" + SpdxConstantsCompatV2.SPDX_DOCUMENT_ID, 
+					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, new ModelCopyManager(), 
+					SpdxConstantsCompatV2.SPEC_TWO_POINT_THREE_VERSION, false, documentUri);
 		} catch (RecognitionException e) {
 			// error in tag value file
 			throw(new InvalidSpdxTagFileException(e.getMessage()));

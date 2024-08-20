@@ -79,8 +79,9 @@ public class TagValueStoreTest extends TestCase {
 	public void testDeSerialize() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File tagValueFile = new File(TAG_VALUE_FILE_PATH);
 		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
+		SpdxDocument deserializedDoc;
 		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
-			tvs.deSerialize(tagValueInput, false);
+			deserializedDoc = tvs.deSerialize(tagValueInput, false);
 		}
 		String docUri = null;
 		List<SpdxDocument> docs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(tvs, null, 
@@ -88,6 +89,7 @@ public class TagValueStoreTest extends TestCase {
 				.collect(Collectors.toList());
 		assertEquals(1, docs.size());
 		docUri = docs.get(0).getDocumentUri();
+		assertEquals(docUri, deserializedDoc.getDocumentUri());
 		File testToFile = File.createTempFile("spdx-test", ".spdx");
 		try {
 			try (OutputStream os = new FileOutputStream(testToFile)) {
@@ -97,7 +99,8 @@ public class TagValueStoreTest extends TestCase {
 			String compDocUri = null;
 			try (FileInputStream is = new FileInputStream(testToFile)) {
 				compareStore.deSerialize(is, false);
-			}docs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(tvs, null, 
+			}
+			docs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(tvs, null, 
 					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null)
 					.collect(Collectors.toList());
 			assertEquals(1, docs.size());
@@ -114,11 +117,12 @@ public class TagValueStoreTest extends TestCase {
 	public void testDeSerializeNoAssertionCopyright() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File tagValueFile = new File(TAG_VALUE_FILE_PATH);
 		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
+		SpdxDocument doc;
 		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
-			tvs.deSerialize(tagValueInput, false);
+			doc = tvs.deSerialize(tagValueInput, false);
 		}
 		try (ByteArrayOutputStream bas = new ByteArrayOutputStream()) {
-			tvs.serialize(bas);
+			tvs.serialize(bas, doc);
 			String result = bas.toString();
 			assertFalse(result.contains("<text>NOASSERTION</text>"));
 			assertTrue(result.contains("PackageCopyrightText: NOASSERTION"));
