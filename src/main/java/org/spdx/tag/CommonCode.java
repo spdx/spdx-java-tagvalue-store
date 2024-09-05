@@ -71,7 +71,7 @@ import org.spdx.library.model.v2.pointer.ByteOffsetPointer;
 import org.spdx.library.model.v2.pointer.LineCharPointer;
 import org.spdx.library.model.v2.pointer.StartEndPointer;
 import org.spdx.library.referencetype.ListedReferenceTypes;
-import org.spdx.storage.CompatibleModelStoreWrapper;
+import org.spdx.storage.compatv2.CompatibleModelStoreWrapper;
 
 /**
  * Define Common methods used by Tag-Value and SPDXViewer to print the SPDX

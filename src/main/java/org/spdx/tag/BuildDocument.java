@@ -66,9 +66,9 @@ import org.spdx.library.model.v2.license.AnyLicenseInfo;
 import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
 import org.spdx.library.model.v2.license.InvalidLicenseStringException;
 import org.spdx.library.referencetype.ListedReferenceTypes;
-import org.spdx.storage.CompatibleModelStoreWrapper;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
+import org.spdx.storage.compatv2.CompatibleModelStoreWrapper;
 
 
 /**
