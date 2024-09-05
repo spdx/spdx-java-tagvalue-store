@@ -34,39 +34,41 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Annotation;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.ExternalRef;
-import org.spdx.library.model.ModelObject;
-import org.spdx.library.model.ReferenceType;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxCreatorInformation;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxNoAssertionElement;
-import org.spdx.library.model.SpdxNoneElement;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxPackageVerificationCode;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.enumerations.AnnotationType;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.enumerations.FileType;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.enumerations.ReferenceCategory;
-import org.spdx.library.model.enumerations.RelationshipType;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.ExtractedLicenseInfo;
-import org.spdx.library.model.license.InvalidLicenseStringException;
-import org.spdx.library.model.license.LicenseInfoFactory;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.Annotation;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.ExternalRef;
+import org.spdx.library.model.v2.ModelObjectV2;
+import org.spdx.library.model.v2.ReferenceType;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxCreatorInformation;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
+import org.spdx.library.model.v2.SpdxNoAssertionElement;
+import org.spdx.library.model.v2.SpdxNoneElement;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxPackageVerificationCode;
+import org.spdx.library.model.v2.SpdxSnippet;
+import org.spdx.library.model.v2.enumerations.AnnotationType;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.enumerations.FileType;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.enumerations.ReferenceCategory;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
+import org.spdx.library.model.v2.license.InvalidLicenseStringException;
 import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
+import org.spdx.storage.compatv2.CompatibleModelStoreWrapper;
 
 
 /**
@@ -86,7 +88,7 @@ public class BuildDocument implements TagValueBehavior {
 		private int lineNumber;
 		private AnnotationWithId(String annotator, int lineNumber) throws InvalidSPDXAnalysisException {
 			this.annotation =  new Annotation(modelStore, documentNamespace, 
-					modelStore.getNextId(IdType.Anonymous, documentNamespace), copyManager, true);
+					modelStore.getNextId(IdType.Anonymous), copyManager, true);
 			this.annotation.setAnnotator(annotator);
 			this.lineNumber = lineNumber;
 		}
@@ -170,7 +172,7 @@ public class BuildDocument implements TagValueBehavior {
 		SpdxPackage pkg;
 
 		public DoapProject(String projectName, SpdxFile file) throws InvalidSPDXAnalysisException {
-			this.pkg = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.SpdxId, documentNamespace), copyManager, true);
+			this.pkg = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.SpdxId), copyManager, true);
 			pkg.setName(projectName);
 			pkg.setComment("This package was created to replace a deprecated DoapProject");
 			relationship = file.createRelationship(pkg, RelationshipType.GENERATED_FROM, "This relationship was translated from an deprecated ArtifactOf");
@@ -310,14 +312,14 @@ public class BuildDocument implements TagValueBehavior {
 	 * The last external reference found
 	 */
 	private ExternalRef lastExternalRef = null;
-	private IModelStore modelStore;
+	private CompatibleModelStoreWrapper modelStore;
 	private String lastFileId = null;
 	private String lastPackageId = null;
 
 	public BuildDocument(IModelStore modelStore, Properties constants, List<String> warnings) {
 		this.constants = constants;
 		this.warningMessages = warnings;
-		this.modelStore = modelStore;
+		this.modelStore = new CompatibleModelStoreWrapper(modelStore);
 		this.ANNOTATION_TAGS.add(constants.getProperty("PROP_ANNOTATION_DATE").trim()+" ");
 		this.ANNOTATION_TAGS.add(constants.getProperty("PROP_ANNOTATION_COMMENT").trim()+" ");
 		this.ANNOTATION_TAGS.add(constants.getProperty("PROP_ANNOTATION_ID").trim()+" ");
@@ -471,7 +473,7 @@ public class BuildDocument implements TagValueBehavior {
 		} else if (tag.equals(constants.getProperty("PROP_SNIPPET_LINE_RANGE"))) {
 			snippetLineRangeMap.put(snippet, value);
 		} else if (tag.equals(constants.getProperty("PROP_SNIPPET_CONCLUDED_LICENSE"))) {
-			snippet.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager));
+			snippet.setLicenseConcluded(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value, modelStore, documentNamespace, copyManager));
 			// can not verify any licenses at this point since the extracted license infos may not be set
 		} else if (tag.equals(constants.getProperty("PROP_SNIPPET_LIC_COMMENTS"))) {
 			snippet.setLicenseComments(value);
@@ -482,7 +484,7 @@ public class BuildDocument implements TagValueBehavior {
 		} else if (tag.equals(constants.getProperty("PROP_SNIPPET_NAME"))) {
 			snippet.setName(value);
 		} else if (tag.equals(constants.getProperty("PROP_SNIPPET_SEEN_LICENSE"))) {
-			snippet.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager));
+			snippet.getLicenseInfoFromFiles().add(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value, modelStore, documentNamespace, copyManager));
 			// can not verify any licenses at this point since the extracted license infos may not be set
 		} else if (tag.equals(constants.getProperty("PROP_ANNOTATOR"))) {
 			if (lastAnnotation != null) {
@@ -600,7 +602,7 @@ public class BuildDocument implements TagValueBehavior {
 			}
 		} else if (tag.equals(constants.getProperty("PROP_SPDX_DATA_LICENSE"))) {
 			try {
-				this.dataLicense = LicenseInfoFactory.getListedLicenseById(value);
+				this.dataLicense = LicenseInfoFactory.getListedLicenseByIdCompatV2(value);
 			} catch(InvalidSPDXAnalysisException ex) {
 				this.dataLicense = null;
 			}
@@ -631,9 +633,9 @@ public class BuildDocument implements TagValueBehavior {
 				this.analysis.setName(this.documentName);
 			}
 		} else if (tag.equals(constants.getProperty("PROP_ELEMENT_ID"))) {
-			if (!value.equals(SpdxConstants.SPDX_DOCUMENT_ID)) {
+			if (!value.equals(SpdxConstantsCompatV2.SPDX_DOCUMENT_ID)) {
 				throw(new InvalidSpdxTagFileException("SPDX Document "+value
-						+" is invalid.  Document IDs must be "+SpdxConstants.SPDX_DOCUMENT_ID + " at line number "+lineNumber));
+						+" is invalid.  Document IDs must be "+SpdxConstantsCompatV2.SPDX_DOCUMENT_ID + " at line number "+lineNumber));
 			}
 		} else if (tag.equals(constants.getProperty("PROP_EXTERNAL_DOC_URI"))) {
 			checkAnalysisNull();
@@ -665,28 +667,28 @@ public class BuildDocument implements TagValueBehavior {
 		} else if (tag.equals(constants.getProperty("PROP_CREATION_CREATOR"))) {
 			checkAnalysisNull();
 			if (analysis.getCreationInfo() == null) {				
-				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), copyManager, true);
+				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 				analysis.setCreationInfo(creator);
 			}
 			analysis.getCreationInfo().getCreators().add(value);
 		} else if (tag.equals(constants.getProperty("PROP_CREATION_CREATED"))) {
 			checkAnalysisNull();
 			if (analysis.getCreationInfo() == null) {				
-				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), copyManager, true);
+				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 				analysis.setCreationInfo(creator);
 			}
 			analysis.getCreationInfo().setCreated(value);
 		} else if (tag.equals(constants.getProperty("PROP_CREATION_COMMENT"))) {
 			checkAnalysisNull();
 			if (analysis.getCreationInfo() == null) {				
-				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), copyManager, true);
+				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 				analysis.setCreationInfo(creator);
 			}
 			analysis.getCreationInfo().setComment(value);
 		} else if (tag.equals(constants.getProperty("PROP_LICENSE_LIST_VERSION"))) {
 			checkAnalysisNull();
 			if (analysis.getCreationInfo() == null) {				
-				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), copyManager, true);
+				SpdxCreatorInformation creator = new SpdxCreatorInformation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 				analysis.setCreationInfo(creator);
 			}
 			analysis.getCreationInfo().setLicenseListVersion(value);
@@ -695,7 +697,7 @@ public class BuildDocument implements TagValueBehavior {
 			analysis.setComment(value);
 		} else if (tag.equals(constants.getProperty("PROP_REVIEW_REVIEWER"))) {
 			checkAnalysisNull();
-			lastReviewer = new Annotation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), copyManager, true);
+			lastReviewer = new Annotation(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 			lastReviewer.setAnnotationType(AnnotationType.REVIEW);
 			lastReviewer.setAnnotator(value);
 			analysis.getAnnotations().add(lastReviewer);
@@ -717,12 +719,12 @@ public class BuildDocument implements TagValueBehavior {
 			lastReviewer.setComment(value);
 		} else if (tag.equals(constants.getProperty("PROP_LICENSE_ID"))) {
 			checkAnalysisNull();
-			if (value == null || !value.startsWith(SpdxConstants.NON_STD_LICENSE_ID_PRENUM)) {
+			if (value == null || !value.startsWith(SpdxConstantsCompatV2.NON_STD_LICENSE_ID_PRENUM)) {
 				if (LicenseInfoFactory.isSpdxListedLicenseId(value) || LicenseInfoFactory.isSpdxListedExceptionId(value)) {
 					throw new InvalidSpdxTagFileException("Attempting to redefine a listed license or listed exception with ID "+value);
 				} else {
 					this.warningMessages.add("Invalid SPDX Listed License ID - must start with " +
-							SpdxConstants.NON_STD_LICENSE_ID_PRENUM + ":" + value);
+							SpdxConstantsCompatV2.NON_STD_LICENSE_ID_PRENUM + ":" + value);
 				}
 			}
 			if (inExtractedLicenseDefinition) {
@@ -746,7 +748,7 @@ public class BuildDocument implements TagValueBehavior {
 			inSnippetDefinition = false;
 			inExtractedLicenseDefinition = false;
 			addLastPackage();
-			this.lastPackage = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous,  documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
+			this.lastPackage = new SpdxPackage(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			this.lastPackage.setName(value);
 			lastPackageLineNumber = lineNumber;
@@ -762,7 +764,7 @@ public class BuildDocument implements TagValueBehavior {
 			inSnippetDefinition = false;
 			inExtractedLicenseDefinition = false;
 			
-			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
+			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			this.lastFile.setName(value);
 			lastFileLineNumber = lineNumber;
@@ -995,15 +997,15 @@ public class BuildDocument implements TagValueBehavior {
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_VALID_UNTIL_DATE"))) {
 			pkg.setValidUntilDate(value);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_CONCLUDED_LICENSE"))) {
-			AnyLicenseInfo licenseSet = LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager);
+			AnyLicenseInfo licenseSet = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value, modelStore, documentNamespace, copyManager);
 			// can not verify any licenses at this point since the extracted license infos may not be set
 			pkg.setLicenseConcluded(licenseSet);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_LICENSE_INFO_FROM_FILES"))) {
-			AnyLicenseInfo license = LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager);
+			AnyLicenseInfo license = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value, modelStore, documentNamespace, copyManager);
 			// can not verify any licenses at this point since the extracted license infos may not be set
 			pkg.getLicenseInfoFromFiles().add(license);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_DECLARED_LICENSE"))) {
-			AnyLicenseInfo licenseSet = LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager);
+			AnyLicenseInfo licenseSet = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value, modelStore, documentNamespace, copyManager);
 			// can not verify any licenses at this point since the extracted license infos may not be set
 			pkg.setLicenseDeclared(licenseSet);
 		} else if (tag.equals(constants.getProperty("PROP_PACKAGE_LICENSE_COMMENT"))) {
@@ -1045,7 +1047,7 @@ public class BuildDocument implements TagValueBehavior {
 			lastRelationship.setComment(value);
 		} else if (tag.equals(constants.getProperty("PROP_FILE_NAME"))) {
 			addLastFile();
-			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous, documentNamespace), // We create this as anonymous and copy to the real package with the correct ID later 
+			this.lastFile = new SpdxFile(modelStore, documentNamespace, modelStore.getNextId(IdType.Anonymous), // We create this as anonymous and copy to the real package with the correct ID later 
 					copyManager, true);
 			this.lastFile.setName(value);
 			lastFileLineNumber = lineNumber;
@@ -1199,11 +1201,11 @@ public class BuildDocument implements TagValueBehavior {
 		} else if (constants.getProperty("PROP_FILE_CHECKSUM").startsWith(tag)) {
 			file.addChecksum(parseChecksum(value, lineNumber, analysis));
 		} else if (tag.equals(constants.getProperty("PROP_FILE_LICENSE"))) {
-			AnyLicenseInfo licenseSet = LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager);
+			AnyLicenseInfo licenseSet = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value, modelStore, documentNamespace, copyManager);
 			// can not verify any licenses at this point since the extracted license infos may not be set
 			file.setLicenseConcluded(licenseSet);
 		} else if (tag.equals(constants.getProperty("PROP_FILE_SEEN_LICENSE"))) {
-			AnyLicenseInfo fileLicense = LicenseInfoFactory.parseSPDXLicenseString(value, modelStore, documentNamespace, copyManager);
+			AnyLicenseInfo fileLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(value, modelStore, documentNamespace, copyManager);
 			// can not verify any licenses at this point since the extracted license infos may not be set
 			file.getLicenseInfoFromFiles().add(fileLicense);
 		} else if (tag.equals(constants.getProperty("PROP_FILE_LIC_COMMENTS"))) {
@@ -1306,35 +1308,51 @@ public class BuildDocument implements TagValueBehavior {
 		addRelationships();
 		checkSinglePackageDefault();
 		addAnnotations();
-		modelStore.getAllItems(documentNamespace, SpdxConstants.CLASS_SPDX_PACKAGE).forEach(element -> {
-			if (modelStore.getIdType(element.getId()).equals(IdType.Anonymous)) {
+		modelStore.getAllItems(documentNamespace, SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE).forEach(element -> {
+			if (modelStore.isAnon(element.getObjectUri())) {
 				this.warningMessages.add("Anonymous type was found for package");
 			}
-			if (elementIdLineNumberMap.containsKey(element.getId())) {
+			String id;
+			try {
+				id = CompatibleModelStoreWrapper.objectUriToId(modelStore, element.getObjectUri(), documentNamespace);
+			} catch (InvalidSPDXAnalysisException e1) {
+				throw new RuntimeException(e1);
+			}
+			if (elementIdLineNumberMap.containsKey(id)) {
 				try {
-					verifyElement(new SpdxPackage(modelStore, documentNamespace, element.getId(), copyManager, false).verify(), "Package", elementIdLineNumberMap.get(element.getId()));
+					verifyElement(new SpdxPackage(modelStore, documentNamespace, id, copyManager, false).verify(), "Package", elementIdLineNumberMap.get(id));
 				} catch (InvalidSPDXAnalysisException e) {
-					this.warningMessages.add("Exception verifying element "+element.getId()+": "+e.getMessage());
+					this.warningMessages.add("Exception verifying element "+id+": "+e.getMessage());
 				}
 			}
 		});
-		modelStore.getAllItems(documentNamespace, SpdxConstants.CLASS_SPDX_SNIPPET).forEach(element -> {
-			if (elementIdLineNumberMap.containsKey(element.getId())) {
-				;
+		modelStore.getAllItems(documentNamespace, SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET).forEach(element -> {
+			String id;
+			try {
+				id = CompatibleModelStoreWrapper.objectUriToId(modelStore, element.getObjectUri(), documentNamespace);
+			} catch (InvalidSPDXAnalysisException e1) {
+				throw new RuntimeException(e1);
+			}
+			if (elementIdLineNumberMap.containsKey(id)) {
 				try {
-					verifyElement(new SpdxSnippet(modelStore, documentNamespace, element.getId(), copyManager, false).verify(), "Snippet", elementIdLineNumberMap.get(element.getId()));
+					verifyElement(new SpdxSnippet(modelStore, documentNamespace, id, copyManager, false).verify(), "Snippet", elementIdLineNumberMap.get(id));
 				} catch (InvalidSPDXAnalysisException e) {
-					this.warningMessages.add("Exception verifying element "+element.getId()+": "+e.getMessage());
+					this.warningMessages.add("Exception verifying element "+id+": "+e.getMessage());
 				}
 			}
 		});
-		modelStore.getAllItems(documentNamespace, SpdxConstants.CLASS_SPDX_FILE).forEach(element -> {
-			if (elementIdLineNumberMap.containsKey(element.getId())) {
-				;
+		modelStore.getAllItems(documentNamespace, SpdxConstantsCompatV2.CLASS_SPDX_FILE).forEach(element -> {
+			String id;
+			try {
+				id = CompatibleModelStoreWrapper.objectUriToId(modelStore, element.getObjectUri(), documentNamespace);
+			} catch (InvalidSPDXAnalysisException e1) {
+				throw new RuntimeException(e1);
+			}
+			if (elementIdLineNumberMap.containsKey(id)) {
 				try {
-					verifyElement(new SpdxFile(modelStore, documentNamespace, element.getId(), copyManager, false).verify(), "File", elementIdLineNumberMap.get(element.getId()));
+					verifyElement(new SpdxFile(modelStore, documentNamespace, id, copyManager, false).verify(), "File", elementIdLineNumberMap.get(id));
 				} catch (InvalidSPDXAnalysisException e) {
-					this.warningMessages.add("Exception verifying element "+element.getId()+": "+e.getMessage());
+					this.warningMessages.add("Exception verifying element "+id+": "+e.getMessage());
 				}
 			}
 		});
@@ -1368,9 +1386,10 @@ public class BuildDocument implements TagValueBehavior {
 			}
 		}
 		List<SpdxPackage> pkgs = new ArrayList<>();
-		modelStore.getAllItems(documentNamespace, SpdxConstants.CLASS_SPDX_PACKAGE).forEach(element -> {
+		modelStore.getAllItems(documentNamespace, SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE).forEach(element -> {
 			try {
-				pkgs.add(new SpdxPackage(modelStore, documentNamespace, element.getId(), copyManager, true));
+				String id = CompatibleModelStoreWrapper.objectUriToId(modelStore, element.getObjectUri(), documentNamespace);
+				pkgs.add(new SpdxPackage(modelStore, documentNamespace, id, copyManager, true));
 			} catch (InvalidSPDXAnalysisException e) {
 				warningMessages.add("Error adding default document describes: "+e.getMessage());
 			}
@@ -1399,7 +1418,7 @@ public class BuildDocument implements TagValueBehavior {
 						" at line number "+annotations.get(i).getLineNumber());
 				continue;
 			}
-			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, id,  copyManager);
+			Optional<ModelObjectV2> mo = SpdxModelFactoryCompatV2.getModelObjectV2(modelStore, documentNamespace, id,  copyManager);
 			if (!mo.isPresent()) {
 				this.warningMessages.add("Invalid element reference in annotation: " + id + " at line number "+annotations.get(i).getLineNumber());
 				continue;
@@ -1429,7 +1448,7 @@ public class BuildDocument implements TagValueBehavior {
 		Map<Integer, Relationship> lineNumberToRelationship = new HashMap<>();
 		for (Entry<String, Map<String, List<RelationshipWithId>>> entry : this.relationships.entrySet()) {
 			String id = entry.getKey();
-			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, id,  copyManager);
+			Optional<ModelObjectV2> mo = SpdxModelFactoryCompatV2.getModelObjectV2(modelStore, documentNamespace, id,  copyManager);
 			if (!mo.isPresent()) {
 				this.warningMessages.add("Invalid element reference in relationship: " + id + ".  The element itself was not defined in the SPDX document.");
 				continue;
@@ -1453,13 +1472,13 @@ public class BuildDocument implements TagValueBehavior {
 			for (Entry<String, List<RelationshipWithId>> relatedElementEntry:entry.getValue().entrySet()) {
 				SpdxElement relatedElement = null;
 				String relatedElementId = relatedElementEntry.getKey();
-
-				if (SpdxNoneElement.NONE_ELEMENT_ID.equals(relatedElementId)) {
-					relatedElement = new SpdxNoneElement();
-				} else if (SpdxNoAssertionElement.NOASSERTION_ELEMENT_ID.equals(relatedElementId)) {
-					relatedElement = new SpdxNoAssertionElement();
+				
+				if (SpdxConstantsCompatV2.NONE_VALUE.equals(relatedElementId)) {
+					relatedElement = new SpdxNoneElement(modelStore, getDocumentUri());
+				} else if (SpdxConstantsCompatV2.NOASSERTION_VALUE.equals(relatedElementId)) {
+					relatedElement = new SpdxNoAssertionElement(modelStore, getDocumentUri());
 				} else {
-					Optional<ModelObject> relatedMo = SpdxModelFactory.getModelObject(modelStore, documentNamespace, relatedElementId,  copyManager);
+					Optional<ModelObjectV2> relatedMo = SpdxModelFactoryCompatV2.getModelObjectV2(modelStore, documentNamespace, relatedElementId,  copyManager);
 					if (!relatedMo.isPresent()) {
 						this.warningMessages.add("Invalid related element reference in relationship: " + relatedElementId);
 						continue;
@@ -1511,7 +1530,8 @@ public class BuildDocument implements TagValueBehavior {
 		
 		List<SpdxFile> allFiles = new ArrayList<>();
 		try(@SuppressWarnings("unchecked")
-        Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getElements(modelStore, documentNamespace, copyManager, SpdxFile.class)) {
+		Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getSpdxObjects(modelStore, copyManager,
+				SpdxConstantsCompatV2.CLASS_SPDX_FILE, documentNamespace, documentNamespace + "#")) {
 		    fileStream.forEach(file -> {
 	            allFiles.add(file);
 	            if (modelStore.getIdType(((SpdxFile)file).getId()).equals(IdType.Anonymous)) {

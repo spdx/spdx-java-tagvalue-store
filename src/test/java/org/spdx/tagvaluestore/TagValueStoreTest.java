@@ -26,13 +26,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.enumerations.RelationshipType;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
+import org.spdx.library.ModelCopyManager;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.storage.simple.InMemSpdxStore;
 import org.spdx.utility.compare.SpdxCompareException;
 
@@ -54,6 +63,9 @@ public class TagValueStoreTest extends TestCase {
 	 */
 	protected void setUp() throws Exception {
 		super.setUp();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(new InMemSpdxStore(), "https://default.doc", new ModelCopyManager());
 	}
 
 	/* (non-Javadoc)
@@ -63,23 +75,36 @@ public class TagValueStoreTest extends TestCase {
 		super.tearDown();
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void testDeSerialize() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File tagValueFile = new File(TAG_VALUE_FILE_PATH);
 		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
-		String docUri = null;
+		SpdxDocument deserializedDoc;
 		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
-			docUri = tvs.deSerialize(tagValueInput, false);
+			deserializedDoc = tvs.deSerialize(tagValueInput, false);
 		}
+		String docUri = null;
+		List<SpdxDocument> docs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(tvs, null, 
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null)
+				.collect(Collectors.toList());
+		assertEquals(1, docs.size());
+		docUri = docs.get(0).getDocumentUri();
+		assertEquals(docUri, deserializedDoc.getDocumentUri());
 		File testToFile = File.createTempFile("spdx-test", ".spdx");
 		try {
 			try (OutputStream os = new FileOutputStream(testToFile)) {
-				tvs.serialize(docUri, os);
+				tvs.serialize(os);
 			}
 			TagValueStore compareStore = new TagValueStore(new InMemSpdxStore());
 			String compDocUri = null;
 			try (FileInputStream is = new FileInputStream(testToFile)) {
-				compDocUri = compareStore.deSerialize(is, false);
+				compareStore.deSerialize(is, false);
 			}
+			docs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(tvs, null, 
+					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null)
+					.collect(Collectors.toList());
+			assertEquals(1, docs.size());
+			compDocUri = docs.get(0).getDocumentUri();
 			assertEquals(docUri, compDocUri);
 			SpdxDocument doc = new SpdxDocument(tvs, docUri, null, false);
 			SpdxDocument compDoc = new SpdxDocument(compareStore, docUri, null, false);
@@ -92,12 +117,12 @@ public class TagValueStoreTest extends TestCase {
 	public void testDeSerializeNoAssertionCopyright() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		File tagValueFile = new File(TAG_VALUE_FILE_PATH);
 		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
-		String docUri = null;
+		SpdxDocument doc;
 		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
-			docUri = tvs.deSerialize(tagValueInput, false);
+			doc = tvs.deSerialize(tagValueInput, false);
 		}
 		try (ByteArrayOutputStream bas = new ByteArrayOutputStream()) {
-			tvs.serialize(docUri, bas);
+			tvs.serialize(bas, doc);
 			String result = bas.toString();
 			assertFalse(result.contains("<text>NOASSERTION</text>"));
 			assertTrue(result.contains("PackageCopyrightText: NOASSERTION"));
@@ -109,10 +134,16 @@ public class TagValueStoreTest extends TestCase {
 	public void testArtifactOf() throws InvalidSPDXAnalysisException, IOException {
 		File tagValueFile = new File(ARTIFACT_OF_FILE_PATH);
 		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
-		String docUri = null;
 		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
-			docUri = tvs.deSerialize(tagValueInput, false);
+			tvs.deSerialize(tagValueInput, false);
 		}
+		String docUri = null;
+		@SuppressWarnings("unchecked")
+		List<SpdxDocument> docs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(tvs, null, 
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null)
+				.collect(Collectors.toList());
+		assertEquals(1, docs.size());
+		docUri = docs.get(0).getDocumentUri();
 		SpdxFile fileWithArtifactOf = new SpdxFile(tvs, docUri, "SPDXRef-File", null, false);
 		Relationship[] relationships = fileWithArtifactOf.getRelationships().toArray(new Relationship[fileWithArtifactOf.getRelationships().size()]);
 		assertEquals(1, relationships.length);
