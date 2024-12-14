@@ -56,7 +56,7 @@ public class TagValueStoreTest extends TestCase {
 	static final String TAG_VALUE_FILE_PATH = "testResources" + File.separator + "SPDXTagExample-v2.3.spdx";
 	private static final String ARTIFACT_OF_FILE_PATH = "testResources" + File.separator + "artifactof.spdx";
 	private static final String CASE_FILE_PATH = "testResources" + File.separator + "case.spdx";
-
+	private static final String DASHES_FILE_PATH = "testResources" + File.separator + "dashes.spdx";
 
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#setUp()
@@ -159,6 +159,15 @@ public class TagValueStoreTest extends TestCase {
 			tvs.deSerialize(tagValueInput, false);
 		}
 		assertEquals(1, tvs.getWarnings().size());
+	}
+
+	public void testPurposeWithDashes() throws InvalidSPDXAnalysisException, IOException {
+		File tagValueFile = new File(DASHES_FILE_PATH);
+		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
+		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
+			tvs.deSerialize(tagValueInput, false);
+		}
+		assertEquals(0, tvs.getWarnings().size());
 	}
 
 }

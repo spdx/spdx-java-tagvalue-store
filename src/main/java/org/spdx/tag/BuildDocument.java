@@ -1076,7 +1076,11 @@ public class BuildDocument implements TagValueBehavior {
 					purpose = Purpose.valueOf(value.trim().toUpperCase());
 					this.warningMessages.add("Invalid Package Purpose - needs to be uppercased: "+value+" at line number "+lineNumber);
 				} catch(IllegalArgumentException ex2) {
-					throw(new InvalidSpdxTagFileException("Unknown Package Purpose: "+value+" at line number "+lineNumber));
+					try {
+						purpose = Purpose.valueOf(value.trim().toUpperCase().replaceAll("-", "_"));
+					} catch(IllegalArgumentException ex3) {
+						throw(new InvalidSpdxTagFileException("Unknown Package Purpose: "+value+" at line number "+lineNumber));
+					}
 				}
 			}
 			pkg.setPrimaryPurpose(purpose);
