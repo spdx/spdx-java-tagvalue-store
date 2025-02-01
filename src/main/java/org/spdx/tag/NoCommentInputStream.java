@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Input stream which filters out any SPDX tag/value comments
  * Any new line which begins with a # is skipped until the end of line except
- * if it is within a <pre>&lt;text&gt; &lt;/text&gt;</pre> wrapper.
+ * if it is within a <code>&lt;text&gt; &lt;/text&gt;</code> wrapper.
  *
  * @author Gary O'Neall
  */

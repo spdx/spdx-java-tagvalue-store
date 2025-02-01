@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  * I'm hoping this is a temporary solution.  This is a hand built parser to parse
  * SPDX tag files.  It replaces the current ANTL based parser which has a defect
  * where any lines starting with a text ending with a : is treated as a tag even
- * if it is in <pre>&lt;text&gt; &lt;/text&gt;</pre>.
+ * if it is in <code>&lt;text&gt; &lt;/text&gt;</code>.
  *
  * The interface is similar to the generated ANTLR code.
  *
