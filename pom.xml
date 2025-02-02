@@ -111,7 +111,7 @@
 					<version>3.5.0</version>
 					<configuration>
 						<quiet>true</quiet>
-						<source>11</source>
+						<source>8</source>
 						<javadocExecutable>${env.JAVA_HOME}/bin/javadoc</javadocExecutable>
 						<doclint>all,-missing</doclint>
 						<links>
