@@ -1,7 +1,6 @@
 /**
- * SPDX-FileContributor: Rana Rahal, Protecode Inc.
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2011 Source Auditor Inc.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -17,16 +16,10 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package org.spdx.tag;
 
 /**
- * Translates an tag-value file to a an SPDX Document.
+ * Package to support the SPDX tag/value store
  *
- * @author Rana Rahal, Protecode Inc.
+ * @author Gary O'Neall
  */
-
-public interface TagValueBehavior {
-  public void buildDocument(String tag, String value, int lineNumber) throws Exception;
-  public void enter() throws Exception;
-  public void exit() throws Exception;
-}
+package org.spdx.tagvaluestore;
