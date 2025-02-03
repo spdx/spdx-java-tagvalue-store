@@ -1,4 +1,5 @@
 /**
+ * SPDX-FileContributor: Gary O'Neall
  * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
