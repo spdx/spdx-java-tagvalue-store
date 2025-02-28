@@ -94,7 +94,7 @@
 					<configuration>
 					<archive>
 						<manifestEntries>
-							<Automatic-Module-Name>org.spdx.tag</Automatic-Module-Name>
+							<Automatic-Module-Name>org.spdx.tagvaluestore</Automatic-Module-Name>
 						</manifestEntries>
 					</archive>
 					</configuration>
