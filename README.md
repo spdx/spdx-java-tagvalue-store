@@ -1,4 +1,4 @@
-# spdx-java-tagvalue-store
+# SPDX Java Tag/Value Store
 
 [![Maven Central Version](https://img.shields.io/maven-central/v/org.spdx/spdx-tagvalue-store)](https://central.sonatype.com/artifact/org.spdx/spdx-tagvalue-store)
 [![javadoc](https://javadoc.io/badge2/org.spdx/spdx-tagvalue-store/javadoc.svg)](https://javadoc.io/doc/org.spdx/spdx-tagvalue-store)
