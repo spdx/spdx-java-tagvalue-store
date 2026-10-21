@@ -128,6 +128,20 @@ public class TagValueStoreTest extends TestCase {
 			assertTrue(result.contains("SnippetCopyrightText: NOASSERTION"));
 		}
 	}
+
+	public void testSerializeVerificationCodeExcludedFiles() throws InvalidSPDXAnalysisException, IOException {
+		File tagValueFile = new File(TAG_VALUE_FILE_PATH);
+		TagValueStore tvs = new TagValueStore(new InMemSpdxStore());
+		SpdxDocument doc;
+		try (InputStream tagValueInput = new FileInputStream(tagValueFile)) {
+			doc = tvs.deSerialize(tagValueInput, false);
+		}
+		try (ByteArrayOutputStream bas = new ByteArrayOutputStream()) {
+			tvs.serialize(bas, doc);
+			assertTrue(bas.toString().contains(
+					"PackageVerificationCode: d6a770ba38583ed4bb4525bd96e50461655d2758 (excludes: ./package.spdx)"));
+		}
+	}
 	
 	public void testArtifactOf() throws InvalidSPDXAnalysisException, IOException {
 		File tagValueFile = new File(ARTIFACT_OF_FILE_PATH);

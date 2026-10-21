@@ -619,18 +619,7 @@ public class CommonCode {
           List<String> excludedFiles = new ArrayList<>(verificationCode.get().getExcludedFileNames());
           if (!excludedFiles.isEmpty()) {
         	  Collections.sort(excludedFiles);
-              StringBuilder excludedFilesBuilder = new StringBuilder("(");
-                
-              for (String excludedFile : excludedFiles) {
-                if(excludedFilesBuilder.length() > 1){
-                    excludedFilesBuilder.append(", ");
-                }
-                
-                excludedFilesBuilder.append(excludedFile);
-              }
-              
-              excludedFilesBuilder.append(')');
-              code += excludedFilesBuilder.toString();
+              code += " (excludes: " + String.join(", ", excludedFiles) + ")";
           }                    
           println(out, code);
         }
